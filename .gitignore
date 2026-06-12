@@ -12,9 +12,12 @@ fuentes_manuales.json
 # Estado local de descargas (varía por usuario)
 estado_descargas.json
 estado_partidos.txt
+reporte_diario.txt
 mundial.log
 launchd_stdout.log
 launchd_stderr.log
+Mundial_Partidos/
+test_output/
 
 # launchd plist con rutas absolutas personales
 com.mundial.descargador.plist

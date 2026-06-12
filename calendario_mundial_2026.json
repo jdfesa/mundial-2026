@@ -7,7 +7,27 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-11T19:00:00Z",
     "sede": "Ciudad de México",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "descargado": true,
+    "archivo": "FIFA World Cup 2026 Group A Mexico Vs South Africa 720p HDTV H264-JFF",
+    "proveedor": "manual_estado",
+    "ruta": null,
+    "idioma": "en",
+    "estado_final": false,
+    "necesita_mejora": true,
+    "archivo_local": "/Users/jd/Development/mundial/Mundial_Partidos/Fase_de_Grupos/Grupo_A/FIFA World Cup 2026 Group A Mexico Vs South Africa 720p HDTV H264-JFF.mkv",
+    "archivo_existe": true,
+    "tamano_mb": 2285.1,
+    "duracion_min": 113.3,
+    "resolucion": "1280x720",
+    "ffprobe": "ok",
+    "pistas_audio": [
+      "eng Stereo"
+    ],
+    "idioma_detectado_archivo": "en",
+    "verificado_en": "2026-06-12T14:08:10.277548+00:00",
+    "intentos_mejora": 1,
+    "ultimo_intento_mejora": "2026-06-12T14:08:03.512431+00:00"
   },
   {
     "id": 2,
@@ -17,7 +37,27 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-12T02:00:00Z",
     "sede": "Guadalajara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "descargado": true,
+    "archivo": "FIFA World Cup 2026 Group A South Korea Vs Czech Republic 720p HDTV H264-JF",
+    "proveedor": "manual_estado",
+    "ruta": null,
+    "idioma": "en",
+    "estado_final": false,
+    "necesita_mejora": true,
+    "archivo_local": "/Users/jd/Development/mundial/Mundial_Partidos/Fase_de_Grupos/Grupo_A/FIFA World Cup 2026 Group A South Korea Vs Czech Republic 720p HDTV H264-JFF.mkv",
+    "archivo_existe": true,
+    "tamano_mb": 2362.6,
+    "duracion_min": 111.4,
+    "resolucion": "1280x720",
+    "ffprobe": "ok",
+    "pistas_audio": [
+      "eng Stereo"
+    ],
+    "idioma_detectado_archivo": "en",
+    "verificado_en": "2026-06-12T14:08:10.340070+00:00",
+    "intentos_mejora": 1,
+    "ultimo_intento_mejora": "2026-06-12T14:08:10.007861+00:00"
   },
   {
     "id": 3,
@@ -27,7 +67,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-12T19:00:00Z",
     "sede": "Toronto",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 4,
@@ -37,7 +80,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-13T01:00:00Z",
     "sede": "Los Ángeles",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 5,
@@ -47,7 +93,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-13T19:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 6,
@@ -57,7 +106,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-13T22:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 7,
@@ -67,7 +119,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-14T01:00:00Z",
     "sede": "Foxborough",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 8,
@@ -77,7 +132,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-14T04:00:00Z",
     "sede": "Vancouver",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 9,
@@ -87,7 +145,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-14T17:00:00Z",
     "sede": "Houston",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 10,
@@ -97,7 +158,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-14T20:00:00Z",
     "sede": "Arlington",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 11,
@@ -107,7 +171,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-14T23:00:00Z",
     "sede": "Filadelfia",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 12,
@@ -117,7 +184,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-15T02:00:00Z",
     "sede": "Monterrey",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 13,
@@ -127,7 +197,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-15T17:00:00Z",
     "sede": "Houston",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 14,
@@ -137,7 +210,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-15T17:00:00Z",
     "sede": "Atlanta",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 15,
@@ -147,7 +223,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-15T20:00:00Z",
     "sede": "Filadelfia",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 16,
@@ -157,7 +236,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-15T23:00:00Z",
     "sede": "Miami",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 17,
@@ -167,7 +249,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-16T17:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 18,
@@ -177,7 +262,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-16T20:00:00Z",
     "sede": "Kansas City",
-    "prioridad": "alta"
+    "prioridad": "alta",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 19,
@@ -187,7 +275,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-16T23:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 20,
@@ -197,7 +288,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-17T01:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 21,
@@ -207,7 +301,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-17T17:00:00Z",
     "sede": "Atlanta",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 22,
@@ -217,7 +314,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-17T20:00:00Z",
     "sede": "Arlington",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 23,
@@ -227,7 +327,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-17T23:00:00Z",
     "sede": "Monterrey",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 24,
@@ -237,7 +340,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-18T01:00:00Z",
     "sede": "Toronto",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 25,
@@ -247,7 +353,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-17T17:00:00Z",
     "sede": "Ciudad de México",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 26,
@@ -257,7 +366,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-17T20:00:00Z",
     "sede": "Guadalajara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 27,
@@ -267,7 +379,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-18T17:00:00Z",
     "sede": "Toronto",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 28,
@@ -277,7 +392,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-18T20:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 29,
@@ -287,7 +405,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-19T17:00:00Z",
     "sede": "Foxborough",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 30,
@@ -297,7 +418,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-19T20:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 31,
@@ -307,7 +431,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-19T23:00:00Z",
     "sede": "Los Ángeles",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 32,
@@ -317,7 +444,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-20T01:00:00Z",
     "sede": "Vancouver",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 33,
@@ -327,7 +457,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-20T17:00:00Z",
     "sede": "Houston",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 34,
@@ -337,7 +470,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-20T20:00:00Z",
     "sede": "Filadelfia",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 35,
@@ -347,7 +483,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-20T23:00:00Z",
     "sede": "Arlington",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 36,
@@ -357,7 +496,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-21T01:00:00Z",
     "sede": "Monterrey",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 37,
@@ -367,7 +509,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-21T17:00:00Z",
     "sede": "Filadelfia",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 38,
@@ -377,7 +522,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-21T20:00:00Z",
     "sede": "Houston",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 39,
@@ -387,7 +535,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-21T23:00:00Z",
     "sede": "Atlanta",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 40,
@@ -397,7 +548,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-22T01:00:00Z",
     "sede": "Miami",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 41,
@@ -407,7 +561,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-22T20:00:00Z",
     "sede": "Arlington",
-    "prioridad": "alta"
+    "prioridad": "alta",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 42,
@@ -417,7 +574,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-22T17:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 43,
@@ -427,7 +587,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-22T20:00:00Z",
     "sede": "Foxborough",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 44,
@@ -437,7 +600,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-22T23:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 45,
@@ -447,7 +613,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-23T17:00:00Z",
     "sede": "Monterrey",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 46,
@@ -457,7 +626,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-23T20:00:00Z",
     "sede": "Atlanta",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 47,
@@ -467,7 +639,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-23T17:00:00Z",
     "sede": "Toronto",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 48,
@@ -477,7 +652,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-23T20:00:00Z",
     "sede": "Arlington",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 49,
@@ -487,7 +665,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-23T22:00:00Z",
     "sede": "Ciudad de México",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 50,
@@ -497,7 +678,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-23T22:00:00Z",
     "sede": "Guadalajara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 51,
@@ -507,7 +691,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-24T22:00:00Z",
     "sede": "Toronto",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 52,
@@ -517,7 +704,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-24T22:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 53,
@@ -527,7 +717,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-25T22:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 54,
@@ -537,7 +730,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-25T22:00:00Z",
     "sede": "Foxborough",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 55,
@@ -547,7 +743,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-25T01:00:00Z",
     "sede": "Los Ángeles",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 56,
@@ -557,7 +756,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-25T01:00:00Z",
     "sede": "Vancouver",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 57,
@@ -567,7 +769,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-25T22:00:00Z",
     "sede": "Houston",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 58,
@@ -577,7 +782,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-25T22:00:00Z",
     "sede": "Filadelfia",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 59,
@@ -587,7 +795,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T01:00:00Z",
     "sede": "Arlington",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 60,
@@ -597,7 +808,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T01:00:00Z",
     "sede": "Monterrey",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 61,
@@ -607,7 +821,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T17:00:00Z",
     "sede": "Houston",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 62,
@@ -617,7 +834,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T17:00:00Z",
     "sede": "Filadelfia",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 63,
@@ -627,7 +847,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T22:00:00Z",
     "sede": "Atlanta",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 64,
@@ -637,7 +860,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T22:00:00Z",
     "sede": "Miami",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 65,
@@ -647,7 +873,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T22:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 66,
@@ -657,7 +886,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-26T22:00:00Z",
     "sede": "Foxborough",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 67,
@@ -667,7 +899,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-27T22:00:00Z",
     "sede": "Arlington",
-    "prioridad": "alta"
+    "prioridad": "alta",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 68,
@@ -677,7 +912,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-27T22:00:00Z",
     "sede": "Santa Clara",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 69,
@@ -687,7 +925,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-27T22:00:00Z",
     "sede": "Atlanta",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 70,
@@ -697,7 +938,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-27T22:00:00Z",
     "sede": "Monterrey",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 71,
@@ -707,7 +951,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-27T22:00:00Z",
     "sede": "Toronto",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 72,
@@ -717,7 +964,10 @@
     "fase": "grupo",
     "fecha_hora_utc": "2026-06-27T22:00:00Z",
     "sede": "Arlington",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 73,
@@ -727,7 +977,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-28T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 74,
@@ -737,7 +990,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-28T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 75,
@@ -747,7 +1003,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-29T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 76,
@@ -757,7 +1016,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-29T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 77,
@@ -767,7 +1029,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-29T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 78,
@@ -777,7 +1042,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-30T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 79,
@@ -787,7 +1055,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-30T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 80,
@@ -797,7 +1068,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-06-30T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 81,
@@ -807,7 +1081,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-01T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 82,
@@ -817,7 +1094,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-01T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 83,
@@ -827,7 +1107,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-01T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 84,
@@ -837,7 +1120,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-02T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 85,
@@ -847,7 +1133,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-02T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 86,
@@ -857,7 +1146,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-02T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 87,
@@ -867,7 +1159,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-03T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 88,
@@ -877,7 +1172,10 @@
     "fase": "octavos",
     "fecha_hora_utc": "2026-07-03T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 89,
@@ -887,7 +1185,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-04T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 90,
@@ -897,7 +1198,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-04T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 91,
@@ -907,7 +1211,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-05T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 92,
@@ -917,7 +1224,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-05T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 93,
@@ -927,7 +1237,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-05T21:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 94,
@@ -937,7 +1250,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-06T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 95,
@@ -947,7 +1263,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-07T01:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 96,
@@ -957,7 +1276,10 @@
     "fase": "cuartos",
     "fecha_hora_utc": "2026-07-07T17:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 97,
@@ -967,7 +1289,10 @@
     "fase": "semifinal",
     "fecha_hora_utc": "2026-07-09T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 98,
@@ -977,7 +1302,10 @@
     "fase": "semifinal",
     "fecha_hora_utc": "2026-07-10T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 99,
@@ -987,7 +1315,10 @@
     "fase": "semifinal",
     "fecha_hora_utc": "2026-07-11T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 100,
@@ -997,7 +1328,10 @@
     "fase": "semifinal",
     "fecha_hora_utc": "2026-07-11T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 101,
@@ -1007,7 +1341,10 @@
     "fase": "semifinal",
     "fecha_hora_utc": "2026-07-14T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 102,
@@ -1017,7 +1354,10 @@
     "fase": "semifinal",
     "fecha_hora_utc": "2026-07-15T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 103,
@@ -1027,7 +1367,10 @@
     "fase": "tercer_puesto",
     "fecha_hora_utc": "2026-07-18T22:00:00Z",
     "sede": "Por definir",
-    "prioridad": "normal"
+    "prioridad": "normal",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   },
   {
     "id": 104,
@@ -1037,6 +1380,9 @@
     "fase": "final",
     "fecha_hora_utc": "2026-07-19T22:00:00Z",
     "sede": "East Rutherford",
-    "prioridad": "alta"
+    "prioridad": "alta",
+    "idioma": null,
+    "estado_final": false,
+    "necesita_mejora": false
   }
 ]
