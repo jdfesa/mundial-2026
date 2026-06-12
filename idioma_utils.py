@@ -15,19 +15,44 @@ INDICADORES_ES = (
     "espanol",
     "spanish",
     "latino",
+    "latam",
     "castellano",
     "relato español",
     "relato espanol",
     "audio español",
     "audio espanol",
+    "comentarios español",
+    "comentarios espanol",
+    "telemundo",
+    "universo",
+    "tudn",
+    "televisa",
+    "azteca",
+    "tyc",
+    "tyc sports",
+    "tv publica",
+    "tv pública",
+    "deportes",
+    "fox deportes",
+    "espn deportes",
+    "vix",
+    "dgo",
+    "directv sports",
     "spa",
+    "es",
 )
 
 INDICADORES_EN = (
     "english",
     "ingles",
     "inglés",
+    "bbc",
+    "itv",
+    "fox",
+    "fs1",
+    "tsn",
     "eng",
+    "en",
 )
 
 
@@ -39,16 +64,23 @@ def normalizar_texto(texto: str | None) -> str:
     return re.sub(r"\s+", " ", texto).strip()
 
 
+def _contiene_indicador(texto: str, indicador: str) -> bool:
+    indicador = normalizar_texto(indicador)
+    if len(indicador) <= 3:
+        return re.search(rf"\b{re.escape(indicador)}\b", texto) is not None
+    return indicador in texto
+
+
 def detectar_idioma(texto: str | None) -> str:
     """Detecta idioma probable a partir de un titulo o metadatos."""
     normalizado = normalizar_texto(texto)
 
     for indicador in INDICADORES_ES:
-        if normalizar_texto(indicador) in normalizado:
+        if _contiene_indicador(normalizado, indicador):
             return IDIOMA_ES
 
     for indicador in INDICADORES_EN:
-        if normalizar_texto(indicador) in normalizado:
+        if _contiene_indicador(normalizado, indicador):
             return IDIOMA_EN
 
     return getattr(config, "IDIOMA_DEFAULT_SIN_INDICADOR", IDIOMA_DESCONOCIDO)
