@@ -31,11 +31,25 @@ def esta_qbittorrent_corriendo() -> bool:
             )
             return "qbittorrent.exe" in resultado.stdout.lower()
 
-        resultado = subprocess.run(
-            ["pgrep", "-x", "qbittorrent"],
-            capture_output=True, text=True
-        )
-        return resultado.returncode == 0
+        nombres = ["qBittorrent", "qbittorrent"]
+        for nombre in nombres:
+            resultado = subprocess.run(
+                ["pgrep", "-x", nombre],
+                capture_output=True, text=True
+            )
+            if resultado.returncode == 0:
+                return True
+            if sistema == "darwin" and resultado.returncode not in (0, 1):
+                break
+
+        if sistema == "darwin":
+            resultado = subprocess.run(
+                ["osascript", "-e", 'application "qBittorrent" is running'],
+                capture_output=True, text=True, timeout=5
+            )
+            if resultado.returncode == 0:
+                return resultado.stdout.strip().lower() == "true"
+        return False
     except Exception:
         return False
 
@@ -245,23 +259,75 @@ def verificar_estado_descarga(nombre_partido: str) -> dict | None:
     return None
 
 
-def listar_descargas_mundial(iniciar_si_no_corre: bool = False) -> list:
-    """Lista todas las descargas de la categoría Mundial2026."""
+def _torrent_attr(torrent, nombre: str, default=None):
+    """Lee atributos de qbittorrent-api soportando dicts y objetos."""
+    if isinstance(torrent, dict):
+        return torrent.get(nombre, default)
+    return getattr(torrent, nombre, default)
+
+
+def listar_torrents(incluir_todos: bool = False, iniciar_si_no_corre: bool = False) -> list[dict]:
+    """Lista torrents con metadata suficiente para sincronizar carpetas."""
     cliente = obtener_cliente(abrir_si_no_corre=iniciar_si_no_corre)
     if not cliente:
         return []
 
     try:
-        torrents = cliente.torrents_info(category=config.QBIT_CATEGORIA)
-        return [
-            {
-                "nombre": t.name,
-                "progreso": round(t.progress * 100, 1),
-                "estado": t.state,
-                "tamano_gb": round(t.size / (1024**3), 2),
-            }
-            for t in torrents
-        ]
+        if incluir_todos:
+            torrents = cliente.torrents_info()
+        else:
+            torrents = cliente.torrents_info(category=config.QBIT_CATEGORIA)
+
+        resultado = []
+        for torrent in torrents:
+            progreso = float(_torrent_attr(torrent, "progress", 0) or 0)
+            resultado.append({
+                "hash": _torrent_attr(torrent, "hash", ""),
+                "nombre": _torrent_attr(torrent, "name", ""),
+                "categoria": _torrent_attr(torrent, "category", ""),
+                "progreso": round(progreso * 100, 1),
+                "completado": progreso >= 1.0,
+                "estado": _torrent_attr(torrent, "state", ""),
+                "tamano_gb": round((_torrent_attr(torrent, "size", 0) or 0) / (1024**3), 2),
+                "ruta": _torrent_attr(torrent, "save_path", ""),
+                "content_path": _torrent_attr(torrent, "content_path", ""),
+            })
+        return resultado
     except Exception as e:
-        logger.error(f"Error listando descargas: {e}")
+        logger.error(f"Error listando torrents: {e}")
         return []
+
+
+def mover_torrent(torrent_hash: str, carpeta_destino: str) -> bool:
+    """
+    Pide a qBittorrent que mueva el contenido de un torrent.
+
+    Usar la API es más seguro que mover archivos con shutil mientras qBittorrent
+    puede estar seedeando o manteniendo handles abiertos.
+    """
+    if not torrent_hash:
+        return False
+
+    cliente = obtener_cliente(abrir_si_no_corre=False)
+    if not cliente:
+        return False
+
+    os.makedirs(carpeta_destino, exist_ok=True)
+    try:
+        resultado = cliente.torrents_set_location(
+            location=carpeta_destino,
+            torrent_hashes=[torrent_hash],
+        )
+        if resultado in (None, "Ok."):
+            logger.info(f"Torrent movido por qBittorrent a: {carpeta_destino}")
+            return True
+        logger.warning(f"qBittorrent respondió al mover torrent: {resultado}")
+        return False
+    except Exception as e:
+        logger.error(f"Error moviendo torrent en qBittorrent: {e}")
+        return False
+
+
+def listar_descargas_mundial(iniciar_si_no_corre: bool = False) -> list:
+    """Lista todas las descargas de la categoría Mundial2026."""
+    return listar_torrents(incluir_todos=False, iniciar_si_no_corre=iniciar_si_no_corre)

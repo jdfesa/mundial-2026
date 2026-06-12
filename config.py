@@ -35,9 +35,13 @@ _cargar_env()
 
 
 # ─── Rutas ───────────────────────────────────────────────────────────────────
-DIRECTORIO_BASE = os.path.expanduser(
-    os.getenv("MUNDIAL_DIRECTORIO_BASE", "~/Desktop/Mundial_Partidos")
+_dir_base_raw = os.path.expanduser(
+    os.getenv("MUNDIAL_DIRECTORIO_BASE", "./Mundial_Partidos")
 )
+# Rutas relativas se resuelven respecto al directorio del proyecto
+if not os.path.isabs(_dir_base_raw):
+    _dir_base_raw = os.path.join(DIRECTORIO_PROYECTO, _dir_base_raw)
+DIRECTORIO_BASE = os.path.abspath(_dir_base_raw)
 ARCHIVO_CALENDARIO = os.path.join(DIRECTORIO_PROYECTO, "calendario_mundial_2026.json")
 ARCHIVO_LOG = os.path.join(DIRECTORIO_PROYECTO, "mundial.log")
 ARCHIVO_ESTADO = os.path.join(DIRECTORIO_PROYECTO, "estado_descargas.json")
@@ -57,6 +61,10 @@ QBIT_PORT = int(os.getenv("QBIT_PORT", "8080"))
 QBIT_USER = os.getenv("QBIT_USER", "admin")
 QBIT_PASS = os.getenv("QBIT_PASS", "adminadmin")
 QBIT_CATEGORIA = "Mundial2026"
+QBIT_MOVER_COMPLETADOS = os.getenv("QBIT_MOVER_COMPLETADOS", "1") not in {"0", "false", "False"}
+QBIT_BUSCAR_TODAS_LAS_DESCARGAS = (
+    os.getenv("QBIT_BUSCAR_TODAS_LAS_DESCARGAS", "1") not in {"0", "false", "False"}
+)
 
 # ─── Tiempos ─────────────────────────────────────────────────────────────────
 # Horas de espera después de que EMPIEZA el partido antes de buscar
