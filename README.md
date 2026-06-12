@@ -40,6 +40,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 │              │       ├── fuentes_manuales.json (URLs propias)  │
 │              │       └── yt-dlp (fallback)                     │
 │              ├── qbit_manager.py ──► qBittorrent               │
+│              ├── organizador_descargas.py                      │
 │              ├── verificador_archivos.py                       │
 │              ├── reporte_diario.py                             │
 │              ├── indice_biblioteca.py                          │
@@ -104,6 +105,24 @@ En cada `--status` y al final de una ejecución real, el script revisa la biblio
 
 Para leer duración, resolución e idioma de pistas de audio usa `ffprobe` si está instalado.
 Si no está, igual detecta existencia y tamaño.
+
+Si qBittorrent está corriendo y la Web API responde, también sincroniza torrents completos:
+
+- detecta torrents ya completados;
+- los compara contra el calendario/estado por título y equipos;
+- si están en la carpeta por defecto de qBittorrent, le pide a qBittorrent que los mueva al
+  destino final por fase/grupo;
+- no mueve archivos con `shutil` mientras qBittorrent los administra.
+
+Esto se controla con:
+
+```env
+QBIT_MOVER_COMPLETADOS=1
+QBIT_BUSCAR_TODAS_LAS_DESCARGAS=1
+```
+
+En una ejecución normal el script puede abrir qBittorrent si no está corriendo. En `--status`
+no lo abre: solo informa el estado para que consultar no dispare aplicaciones.
 
 También se generan:
 
@@ -180,7 +199,7 @@ MUNDIAL_DIRECTORIO_BASE=~/Desktop/Mundial_Partidos
 QBIT_HOST=127.0.0.1
 QBIT_PORT=8080
 QBIT_USER=admin
-QBIT_PASS=tu_contraseña
+QBIT_PASS=adminadmin
 ```
 
 ### `fuentes_torrent.json`
@@ -236,6 +255,15 @@ sigue funcionando.
 ## Uso
 
 ### macOS
+
+Uso recomendado con menu interactivo:
+
+```bash
+./menu_macos.sh
+```
+
+El menu permite ver estado, ejecutar, simular, forzar un partido, marcar descargas,
+probar qBittorrent y reinstalar la tarea automatica.
 
 ```bash
 ./run_macos.sh                   # Ejecutar
@@ -297,6 +325,7 @@ con `--idioma es`, queda como `FINAL`.
 | `estado_descargas.py` | ✅ | Estado persistente separado del calendario |
 | `idioma_utils.py` | ✅ | Detección y clasificación de idioma |
 | `fuentes_manuales.py` | ✅ | Lógica para fuentes declaradas por el usuario |
+| `organizador_descargas.py` | ✅ | Mueve torrents completos a la carpeta final |
 | `verificador_archivos.py` | ✅ | Verifica archivos locales y metadata con ffprobe |
 | `indice_biblioteca.py` | ✅ | Genera índice HTML y playlist M3U |
 | `reporte_diario.py` | ✅ | Genera resumen diario de partidos y mejoras |
@@ -306,6 +335,7 @@ con `--idioma es`, queda como `FINAL`.
 | `fuentes_torrent.example.json` | ✅ | Template para indexadores |
 | `fuentes_manuales.example.json` | ✅ | Template para fuentes manuales |
 | `setup.sh` | ✅ | Setup automático macOS |
+| `menu_macos.sh` | ✅ | Menú interactivo para macOS |
 | `run_macos.sh` | ✅ | Ejecutor portable macOS |
 | `run_windows.bat` | ✅ | Ejecutor portable Windows |
 | `install_macos_launchd.sh` | ✅ | Instala tarea launchd |
@@ -328,8 +358,24 @@ Para usar la Web API:
 
 1. Abrir qBittorrent.
 2. Ir a Preferencias > Web UI > Habilitar la interfaz de usuario web.
-3. Puerto: `8080`, usuario y contraseña a elección.
-4. Actualizar las credenciales en `.env`.
+3. Configurar:
+   - IP address: `127.0.0.1`
+   - Port: `8080`
+   - Username: `admin`
+   - Password: `adminadmin`
+4. Dejar desactivado HTTPS para uso local.
+5. Tocar Apply/OK y reiniciar qBittorrent si el puerto no responde.
+6. Verificar que `.env` tenga los mismos valores.
+
+Prueba rápida:
+
+```bash
+curl -I http://127.0.0.1:8080
+```
+
+Si responde `401`, `403` o `200`, la Web UI está levantada. Si responde `000` o
+connection refused, qBittorrent no está escuchando en ese puerto o falta aplicar la
+configuración.
 
 ## Repos útiles
 
