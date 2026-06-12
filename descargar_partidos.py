@@ -25,12 +25,15 @@ from estado_descargas import (
     normalizar_calendario,
 )
 from idioma_utils import detectar_idioma, etiqueta_idioma, idioma_es_final
+from indice_biblioteca import generar_indice
 from notificador import (
     notificar_descarga_iniciada,
     notificar_no_encontrado,
     notificar_resumen,
     notificar_error,
 )
+from reporte_diario import generar_reporte_diario
+from verificador_archivos import verificar_archivos
 
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
@@ -109,12 +112,14 @@ def partido_listo_para_buscar(partido: dict) -> bool:
     """
     Verifica si un partido está listo para buscar (ya terminó + tiempo de espera).
     """
+    es_mejorable = False
     if partido.get("descargado"):
         idioma_actual = partido.get("idioma") or detectar_idioma(partido.get("archivo"))
         if idioma_es_final(idioma_actual):
             return False
         if not getattr(config, "PERMITIR_UPGRADE_IDIOMA", True):
             return False
+        es_mejorable = True
 
     # Partidos de eliminatorias sin equipos definidos
     if partido.get("equipo1") == "Por definir":
@@ -134,12 +139,24 @@ def partido_listo_para_buscar(partido: dict) -> bool:
     if ahora < tiempo_minimo:
         return False
 
-    # Verificar si no superó el máximo de intentos
+    if es_mejorable:
+        ultimo = partido.get("ultimo_intento_mejora")
+        try:
+            if ultimo:
+                ultimo_dt = datetime.fromisoformat(ultimo.replace("Z", "+00:00"))
+                espera = getattr(config, "MINUTOS_ENTRE_REINTENTOS_MEJORA", 180)
+                if ahora < ultimo_dt + timedelta(minutes=espera):
+                    return False
+        except ValueError:
+            pass
+        return True
+
+    # Verificar si no superó el máximo de intentos para partidos sin descarga.
     intentos = partido.get("intentos", 0)
     if intentos >= config.MAX_INTENTOS:
         return False
 
-    # Verificar tiempo entre reintentos
+    # Verificar tiempo entre reintentos normales.
     ultimo = partido.get("ultimo_intento")
     if ultimo:
         try:
@@ -185,6 +202,20 @@ def resultado_mejora_estado(partido: dict, resultado: dict) -> bool:
     return idioma_es_final(idioma_resultado)
 
 
+def partido_mejorable(partido: dict) -> bool:
+    """Indica si el partido ya tiene descarga pero no en idioma final."""
+    if not partido.get("descargado"):
+        return False
+    idioma_actual = partido.get("idioma") or detectar_idioma(partido.get("archivo"))
+    return not idioma_es_final(idioma_actual)
+
+
+def registrar_intento_mejora(partido: dict) -> None:
+    """Registra una revision de mejora sin consumir intentos normales."""
+    partido["intentos_mejora"] = partido.get("intentos_mejora", 0) + 1
+    partido["ultimo_intento_mejora"] = datetime.now(timezone.utc).isoformat()
+
+
 def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool = False) -> bool | None:
     """
     Busca y descarga un partido.
@@ -228,22 +259,26 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
                     "  Fuente manual encontrada, pero no mejora idioma actual "
                     f"({etiqueta_idioma(partido.get('idioma'))})"
                 )
-                return False
+                if solo_manuales:
+                    if not dry_run and partido_mejorable(partido):
+                        registrar_intento_mejora(partido)
+                    return None
+            else:
+                resultado_manual = descargar_fuente_manual(
+                    fuente=fuente_manual,
+                    partido=partido,
+                    directorio_destino=directorio,
+                    dry_run=dry_run,
+                )
+                if resultado_manual:
+                    resultado_manual["idioma"] = resultado_previo["idioma"]
+                    registrar_descarga(partido, resultado_manual, directorio)
+                    if not dry_run:
+                        notificar_descarga_iniciada(equipo1, equipo2)
+                    logger.info("  Fuente manual procesada correctamente")
+                    return True
+                logger.warning("  La fuente manual fallo; se continua con el flujo existente")
 
-            resultado_manual = descargar_fuente_manual(
-                fuente=fuente_manual,
-                partido=partido,
-                directorio_destino=directorio,
-                dry_run=dry_run,
-            )
-            if resultado_manual:
-                resultado_manual["idioma"] = resultado_previo["idioma"]
-                registrar_descarga(partido, resultado_manual, directorio)
-                if not dry_run:
-                    notificar_descarga_iniciada(equipo1, equipo2)
-                logger.info("  Fuente manual procesada correctamente")
-                return True
-            logger.warning("  La fuente manual fallo; se continua con el flujo existente")
         elif solo_manuales:
             logger.info("  Sin fuente manual para este partido; se omite por --solo-manuales")
             return None
@@ -267,7 +302,9 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
                 "  Resultado encontrado, pero no mejora el idioma actual "
                 f"({etiqueta_idioma(partido.get('idioma'))}). No se encola duplicado."
             )
-            return False
+            if not dry_run and partido_mejorable(partido):
+                registrar_intento_mejora(partido)
+            return None
 
         if dry_run:
             logger.info(f"  [DRY RUN] Se enviaría a qBittorrent")
@@ -298,7 +335,7 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
 
         if dry_run:
             logger.info(f"  [DRY RUN] Se intentaría con yt-dlp")
-            return False
+            return None if partido_mejorable(partido) else False
 
         resultado_yt = buscar_ytdlp(equipo1, equipo2, directorio)
         if resultado_yt:
@@ -310,12 +347,19 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
                     "  yt-dlp encontro resultado, pero no mejora el idioma actual "
                     f"({etiqueta_idioma(partido.get('idioma'))})"
                 )
-                return False
+                if not dry_run and partido_mejorable(partido):
+                    registrar_intento_mejora(partido)
+                return None
 
             logger.info(f"  ✅ Descargado vía yt-dlp: {resultado_yt['titulo']}")
             registrar_descarga(partido, resultado_yt, resultado_yt.get("ruta"))
             return True
         else:
+            if partido_mejorable(partido):
+                registrar_intento_mejora(partido)
+                logger.info("  No apareció mejora en español; se intentará nuevamente más adelante")
+                return None
+
             intentos = partido.get("intentos", 0) + 1
             logger.warning(
                 f"  ⚠️ No se encontró {equipo1} vs {equipo2} "
@@ -328,9 +372,13 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
 def mostrar_estado():
     """Muestra el estado actual de todas las descargas."""
     calendario = cargar_calendario()
-    aplicar_estado(calendario, cargar_estado())
+    estado = cargar_estado()
+    aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
-    guardar_estado_txt(calendario)
+    verificar_archivos(calendario)
+    guardar_estado(calendario, estado)
+    generar_reporte_diario(calendario)
+    generar_indice(calendario)
     ahora = datetime.now(timezone.utc)
 
     descargados = [p for p in calendario if p.get("descargado")]
@@ -381,13 +429,15 @@ def mostrar_estado():
                   f"{'⭐' if p.get('prioridad') == 'alta' else ''}")
 
     # Partidos listos para buscar
-    listos = [p for p in pendientes if partido_listo_para_buscar(p)]
+    listos = [p for p in calendario if partido_listo_para_buscar(p)]
     if listos:
         print(f"\n🔍 LISTOS PARA BUSCAR ({len(listos)}):")
         for p in listos:
+            tipo = "mejora" if partido_mejorable(p) else "normal"
+            intentos = p.get("intentos_mejora", 0) if tipo == "mejora" else p.get("intentos", 0)
             print(f"   {p['equipo1']} vs {p['equipo2']} "
                   f"({p.get('grupo', '?')}) - "
-                  f"intentos: {p.get('intentos', 0)}/{config.MAX_INTENTOS} "
+                  f"tipo: {tipo} - intentos: {intentos} "
                   f"{'⭐' if p.get('prioridad') == 'alta' else ''}")
 
     # Estado de qBittorrent
@@ -413,6 +463,18 @@ def main():
     mostrar = "--status" in sys.argv
     solo_manuales = "--solo-manuales" in sys.argv
     forzar_id = None
+    marcar_id = None
+    marcar_idioma = "en"
+    marcar_archivo = None
+    marcar_ruta = None
+
+    def valor_arg(nombre: str) -> str | None:
+        if nombre not in sys.argv:
+            return None
+        idx = sys.argv.index(nombre)
+        if idx + 1 >= len(sys.argv):
+            return None
+        return sys.argv[idx + 1]
 
     if "--forzar" in sys.argv:
         idx = sys.argv.index("--forzar")
@@ -422,6 +484,46 @@ def main():
             except ValueError:
                 logger.error("El ID debe ser un número entero")
                 sys.exit(1)
+
+    if "--marcar-descargado" in sys.argv:
+        valor = valor_arg("--marcar-descargado")
+        try:
+            marcar_id = int(valor) if valor else None
+        except ValueError:
+            logger.error("El ID de --marcar-descargado debe ser un número entero")
+            sys.exit(1)
+        marcar_idioma = valor_arg("--idioma") or marcar_idioma
+        marcar_archivo = valor_arg("--archivo")
+        marcar_ruta = valor_arg("--ruta")
+
+    if marcar_id:
+        calendario = cargar_calendario()
+        estado = cargar_estado()
+        aplicar_estado(calendario, estado)
+        normalizar_calendario(calendario)
+
+        partido = next((p for p in calendario if p.get("id") == marcar_id), None)
+        if not partido:
+            logger.error(f"No se encontró partido con ID {marcar_id}")
+            sys.exit(1)
+
+        titulo = marcar_archivo or partido.get("archivo") or (
+            f"{partido.get('equipo1')}_vs_{partido.get('equipo2')}"
+        )
+        registrar_descarga(
+            partido,
+            {"titulo": titulo, "fuente": "manual_estado", "idioma": marcar_idioma},
+            marcar_ruta or partido.get("ruta"),
+        )
+        verificar_archivos(calendario)
+        guardar_estado(calendario, estado)
+        generar_reporte_diario(calendario)
+        generar_indice(calendario)
+        logger.info(
+            f"Partido {marcar_id} marcado como descargado "
+            f"({etiqueta_idioma(marcar_idioma)})"
+        )
+        return
 
     if mostrar:
         mostrar_estado()
@@ -440,6 +542,8 @@ def main():
     estado = cargar_estado()
     aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
+    if not dry_run:
+        verificar_archivos(calendario)
     logger.info(f"Calendario cargado: {len(calendario)} partidos")
 
     # Crear directorio base
@@ -529,8 +633,14 @@ def main():
 
     # Guardar calendario actualizado
     if not dry_run:
+        verificar_archivos(calendario)
         guardar_calendario(calendario)
         guardar_estado(calendario, estado)
+        generar_reporte_diario(calendario)
+        generar_indice(calendario)
+    else:
+        guardar_estado_txt(calendario)
+        generar_reporte_diario(calendario)
 
     # Resumen
     total_desc = sum(1 for p in calendario if p.get("descargado"))

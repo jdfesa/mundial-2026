@@ -42,8 +42,14 @@ ARCHIVO_CALENDARIO = os.path.join(DIRECTORIO_PROYECTO, "calendario_mundial_2026.
 ARCHIVO_LOG = os.path.join(DIRECTORIO_PROYECTO, "mundial.log")
 ARCHIVO_ESTADO = os.path.join(DIRECTORIO_PROYECTO, "estado_descargas.json")
 ARCHIVO_ESTADO_TXT = os.path.join(DIRECTORIO_PROYECTO, "estado_partidos.txt")
+ARCHIVO_REPORTE_DIARIO = os.path.join(DIRECTORIO_PROYECTO, "reporte_diario.txt")
 ARCHIVO_FUENTES_MANUALES = os.path.join(DIRECTORIO_PROYECTO, "fuentes_manuales.json")
 ARCHIVO_FUENTES_TORRENT = os.path.join(DIRECTORIO_PROYECTO, "fuentes_torrent.json")
+ARCHIVO_INDICE_HTML = os.path.join(DIRECTORIO_BASE, "index.html")
+ARCHIVO_PLAYLIST_M3U = os.path.join(DIRECTORIO_BASE, "playlist_mundial.m3u")
+DIRECTORIOS_VERIFICACION_EXTRA = [
+    p for p in os.getenv("MUNDIAL_DIRECTORIOS_EXTRA", "").split(os.pathsep) if p
+]
 
 # ─── qBittorrent ─────────────────────────────────────────────────────────────
 QBIT_HOST = os.getenv("QBIT_HOST", "127.0.0.1")
@@ -59,6 +65,8 @@ HORAS_ESPERA_POST_PARTIDO = 3
 MAX_INTENTOS = 15
 # Minutos entre reintentos cuando un partido no se encuentra
 MINUTOS_ENTRE_REINTENTOS = 30
+# Minutos entre busquedas de mejora para partidos ya descargados en otro idioma
+MINUTOS_ENTRE_REINTENTOS_MEJORA = 180
 
 # ─── Filtros de Búsqueda ─────────────────────────────────────────────────────
 MIN_SEEDERS = 1  # Bajo para torrents recién subidos del mundial
@@ -71,6 +79,8 @@ IDIOMAS_FINALES = ["es"]
 # preferis no asumir.
 IDIOMA_DEFAULT_SIN_INDICADOR = "en"
 PERMITIR_UPGRADE_IDIOMA = True
+ZONA_HORARIA_REPORTE = os.getenv("MUNDIAL_ZONA_HORARIA", "America/Argentina/Buenos_Aires")
+EXTENSIONES_VIDEO = [".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts", ".webm"]
 
 # Palabras clave para buscar partidos completos (no resúmenes)
 KEYWORDS_POSITIVAS = [
