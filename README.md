@@ -40,6 +40,9 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 │              │       ├── fuentes_manuales.json (URLs propias)  │
 │              │       └── yt-dlp (fallback)                     │
 │              ├── qbit_manager.py ──► qBittorrent               │
+│              ├── verificador_archivos.py                       │
+│              ├── reporte_diario.py                             │
+│              ├── indice_biblioteca.py                          │
 │              └── ~/Desktop/Mundial_Partidos/                   │
 │                      ├── Fase_de_Grupos/Grupo_A/               │
 │                      ├── Fase_de_Grupos/Grupo_B/               │
@@ -56,7 +59,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 1. El script revisa el calendario y solo procesa partidos que:
    - ya hayan empezado hace al menos 3 horas;
    - no estén descargados en idioma final;
-   - no hayan superado el máximo de intentos (15);
+   - no hayan superado el máximo de intentos normales (15);
    - respeten el tiempo entre reintentos (30 min).
 
 2. Para cada partido genera ~15 queries de búsqueda (en inglés y español, en ambos
@@ -84,6 +87,41 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 Si un partido ya está en inglés y una búsqueda posterior encuentra otro resultado en
 inglés, no se vuelve a descargar. Si encuentra una versión en español, se descarga y
 el partido pasa a estado final.
+
+Las búsquedas de mejora para partidos ya descargados en inglés no consumen los intentos
+normales. Se registran aparte como `intentos_mejora` y `ultimo_intento_mejora`, y se
+reintentan cada `MINUTOS_ENTRE_REINTENTOS_MEJORA`.
+
+## Verificación, índice y reporte
+
+En cada `--status` y al final de una ejecución real, el script revisa la biblioteca local:
+
+- busca archivos de video en `DIRECTORIO_BASE`;
+- también revisa la ruta guardada del partido si existe;
+- opcionalmente revisa rutas extra configuradas en `MUNDIAL_DIRECTORIOS_EXTRA`;
+- si encuentra un video, guarda `archivo_local`, `archivo_existe`, `tamano_mb`,
+  `duracion_min`, `resolucion` e `idioma_detectado_archivo`.
+
+Para leer duración, resolución e idioma de pistas de audio usa `ffprobe` si está instalado.
+Si no está, igual detecta existencia y tamaño.
+
+También se generan:
+
+```text
+estado_partidos.txt
+reporte_diario.txt
+<DIRECTORIO_BASE>/index.html
+<DIRECTORIO_BASE>/playlist_mundial.m3u
+```
+
+El índice HTML permite abrir los partidos descargados desde una página simple, agrupados por
+grupo/fase. La playlist M3U sirve para abrir todo desde VLC u otro reproductor compatible.
+
+La zona horaria del reporte diario se puede cambiar con:
+
+```env
+MUNDIAL_ZONA_HORARIA=America/Argentina/Buenos_Aires
+```
 
 ## Instalación
 
@@ -205,6 +243,7 @@ sigue funcionando.
 ./run_macos.sh --status          # Ver estado de descargas
 ./run_macos.sh --forzar 3        # Forzar descarga del partido #3
 ./run_macos.sh --solo-manuales   # Solo fuentes manuales
+./run_macos.sh --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
 ```
 
 ### Windows
@@ -213,6 +252,7 @@ sigue funcionando.
 run_windows.bat --dry-run
 run_windows.bat --status
 run_windows.bat --forzar 3
+run_windows.bat --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
 ```
 
 ### Directo con Python
@@ -221,7 +261,12 @@ run_windows.bat --forzar 3
 python descargar_partidos.py --status
 python descargar_partidos.py --dry-run
 python descargar_partidos.py --forzar 1
+python descargar_partidos.py --marcar-descargado 1 --idioma es --archivo "Mexico vs Sudafrica español"
 ```
+
+`--marcar-descargado` sirve para rectificar el estado cuando ya viste que un partido está
+descargado o en cola. Si lo marcás con `--idioma en`, queda como `MEJORABLE`; si lo marcás
+con `--idioma es`, queda como `FINAL`.
 
 ## Estructura de carpetas
 
@@ -252,6 +297,9 @@ python descargar_partidos.py --forzar 1
 | `estado_descargas.py` | ✅ | Estado persistente separado del calendario |
 | `idioma_utils.py` | ✅ | Detección y clasificación de idioma |
 | `fuentes_manuales.py` | ✅ | Lógica para fuentes declaradas por el usuario |
+| `verificador_archivos.py` | ✅ | Verifica archivos locales y metadata con ffprobe |
+| `indice_biblioteca.py` | ✅ | Genera índice HTML y playlist M3U |
+| `reporte_diario.py` | ✅ | Genera resumen diario de partidos y mejoras |
 | `calendario_mundial_2026.json` | ✅ | 104 partidos con fechas UTC |
 | `requirements.txt` | ✅ | Dependencias Python |
 | `.env.example` | ✅ | Template para configuración local |
@@ -266,6 +314,8 @@ python descargar_partidos.py --forzar 1
 | `fuentes_torrent.json` | ❌ | Mirrors reales de indexadores |
 | `fuentes_manuales.json` | ❌ | URLs de partidos del usuario |
 | `estado_descargas.json` | ❌ | Estado local de descargas |
+| `estado_partidos.txt` | ❌ | Resumen legible de estado, idioma y archivo |
+| `reporte_diario.txt` | ❌ | Reporte diario generado |
 | `mundial.log` | ❌ | Logs de ejecución |
 
 ## qBittorrent
