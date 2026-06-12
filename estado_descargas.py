@@ -24,6 +24,17 @@ STATE_FIELDS = (
     "idioma",
     "estado_final",
     "necesita_mejora",
+    "archivo_local",
+    "archivo_existe",
+    "tamano_mb",
+    "duracion_min",
+    "resolucion",
+    "ffprobe",
+    "pistas_audio",
+    "idioma_detectado_archivo",
+    "verificado_en",
+    "intentos_mejora",
+    "ultimo_intento_mejora",
 )
 
 
@@ -72,6 +83,10 @@ def aplicar_estado(calendario: list[dict], estado: dict) -> None:
             continue
         for campo in STATE_FIELDS:
             if campo in datos:
+                if datos[campo] is None and partido.get(campo) not in (None, ""):
+                    continue
+                if campo == "descargado" and partido.get("descargado") and not datos[campo]:
+                    continue
                 partido[campo] = datos[campo]
 
         _normalizar_estado_partido(partido)
@@ -112,6 +127,17 @@ def actualizar_estado_desde_calendario(calendario: list[dict], estado: dict | No
         item["equipo2"] = partido.get("equipo2")
         item["fecha_hora_utc"] = partido.get("fecha_hora_utc")
         item["actualizado_en"] = datetime.now(timezone.utc).isoformat()
+
+    vacios = []
+    for key, item in partidos_estado.items():
+        tiene_estado_real = any(
+            item.get(campo) not in (None, False, "", [], {})
+            for campo in STATE_FIELDS
+        )
+        if not tiene_estado_real:
+            vacios.append(key)
+    for key in vacios:
+        partidos_estado.pop(key, None)
 
     return estado
 
@@ -161,6 +187,17 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
 
         idioma = etiqueta_idioma(partido.get("idioma")) if descargado else "-"
         archivo = partido.get("archivo") or "-"
+        archivo_local = partido.get("archivo_local")
+        if archivo_local:
+            archivo = f"{archivo} | local: {archivo_local}"
+        datos_archivo = []
+        if partido.get("tamano_mb"):
+            datos_archivo.append(f"{partido['tamano_mb']} MB")
+        if partido.get("duracion_min"):
+            datos_archivo.append(f"{partido['duracion_min']} min")
+        if partido.get("resolucion"):
+            datos_archivo.append(str(partido["resolucion"]))
+        extra = f" | {' / '.join(datos_archivo)}" if datos_archivo else ""
         fecha = partido.get("fecha_hora_utc", "-")
         grupo = partido.get("grupo", partido.get("fase", "-"))
         equipo1 = partido.get("equipo1", "Por definir")
@@ -168,7 +205,7 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
 
         lineas.append(
             f"{partido.get('id', '?'):>3} | {estado:<9} | {idioma:<11} | "
-            f"{fecha} | {grupo} | {equipo1} vs {equipo2} | {archivo}"
+            f"{fecha} | {grupo} | {equipo1} vs {equipo2} | {archivo}{extra}"
         )
 
     with open(ruta, "w", encoding="utf-8") as f:
