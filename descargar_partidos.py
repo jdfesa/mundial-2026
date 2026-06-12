@@ -33,6 +33,7 @@ from notificador import (
     notificar_error,
 )
 from reporte_diario import generar_reporte_diario
+from organizador_descargas import sincronizar_descargas_completadas
 from verificador_archivos import verificar_archivos
 
 
@@ -93,15 +94,9 @@ def guardar_calendario(datos: list[dict]):
 
 def crear_directorio_partido(partido: dict) -> str:
     """Crea y retorna el directorio de destino para un partido."""
-    fase = partido.get("fase", "grupo")
-    carpeta_fase = config.CARPETAS_FASE.get(fase, "Otros")
+    from organizador_descargas import directorio_partido
 
-    if fase == "grupo":
-        grupo = partido.get("grupo", "Sin_Grupo").replace(" ", "_")
-        ruta = os.path.join(config.DIRECTORIO_BASE, carpeta_fase, grupo)
-    else:
-        ruta = os.path.join(config.DIRECTORIO_BASE, carpeta_fase)
-
+    ruta = directorio_partido(partido)
     os.makedirs(ruta, exist_ok=True)
     return ruta
 
@@ -375,6 +370,7 @@ def mostrar_estado():
     estado = cargar_estado()
     aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
+    sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=False)
     verificar_archivos(calendario)
     guardar_estado(calendario, estado)
     generar_reporte_diario(calendario)
@@ -543,6 +539,7 @@ def main():
     aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
     if not dry_run:
+        sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
         verificar_archivos(calendario)
     logger.info(f"Calendario cargado: {len(calendario)} partidos")
 
@@ -633,6 +630,7 @@ def main():
 
     # Guardar calendario actualizado
     if not dry_run:
+        sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
         verificar_archivos(calendario)
         guardar_calendario(calendario)
         guardar_estado(calendario, estado)
