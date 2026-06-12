@@ -1,0 +1,15 @@
+{
+  "fuentes": [
+    {
+      "id": 1,
+      "equipo1": "Mexico",
+      "equipo2": "Sudafrica",
+      "nombre": "Replay autorizado o grabacion propia",
+      "url": "https://example.com/replay-autorizado.mp4",
+      "titulo": "Mexico_vs_Sudafrica_2026_1080p_es",
+      "idioma": "es",
+      "calidad": "1080p",
+      "notas": "Copiar este archivo como fuentes_manuales.json y reemplazar la URL por una fuente que tengas permiso de descargar."
+    }
+  ]
+}

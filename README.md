@@ -1,0 +1,288 @@
+# ⚽ Descargador Mundial 2026
+
+## Aviso Legal
+
+Este proyecto es una herramienta de automatización con fines educativos, técnicos y de uso
+personal. El script no aloja, no vende, no publica y no distribuye contenido audiovisual.
+Solo automatiza búsquedas, organización local, reintentos y descargas a partir de fuentes
+configuradas por el usuario.
+
+Los partidos, transmisiones, relatos, logos, nombres comerciales y materiales asociados al
+Mundial pueden estar protegidos por derechos de autor, derechos de transmisión, marcas u
+otras restricciones legales. Cada usuario es responsable de verificar que tiene permiso,
+licencia o derecho de acceso para descargar, grabar, copiar o conservar cualquier contenido
+que use con este proyecto.
+
+Agregar este aviso no autoriza el uso de fuentes no permitidas ni reemplaza asesoramiento
+legal. Si una fuente no permite descarga, copia, redistribución o conservación local, no
+debería usarse con este script.
+
+---
+
+## Qué es
+
+Scripts en Python para organizar la búsqueda, descarga y archivo automático de los 104
+partidos del Mundial FIFA 2026. Funciona en macOS y Windows.
+
+El sistema busca partidos ya finalizados en fuentes torrent configuradas por el usuario,
+los descarga vía qBittorrent y los organiza automáticamente en carpetas por fase y grupo.
+
+## Cómo funciona
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  launchd / Task Scheduler (cada 30 min)                        │
+│      └── descargar_partidos.py                                 │
+│              ├── Lee calendario_mundial_2026.json (104 matches) │
+│              ├── ¿Partido terminó hace +3 horas? ──► buscar    │
+│              ├── buscador_torrents.py                           │
+│              │       ├── fuentes_torrent.json (mirrors)        │
+│              │       ├── fuentes_manuales.json (URLs propias)  │
+│              │       └── yt-dlp (fallback)                     │
+│              ├── qbit_manager.py ──► qBittorrent               │
+│              └── ~/Desktop/Mundial_Partidos/                   │
+│                      ├── Fase_de_Grupos/Grupo_A/               │
+│                      ├── Fase_de_Grupos/Grupo_B/               │
+│                      ├── ...                                   │
+│                      ├── Octavos_de_Final/                     │
+│                      ├── Cuartos_de_Final/                     │
+│                      ├── Semifinales/                          │
+│                      └── Final/                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Lógica de búsqueda
+
+1. El script revisa el calendario y solo procesa partidos que:
+   - ya hayan empezado hace al menos 3 horas;
+   - no estén descargados en idioma final;
+   - no hayan superado el máximo de intentos (15);
+   - respeten el tiempo entre reintentos (30 min).
+
+2. Para cada partido genera ~15 queries de búsqueda (en inglés y español, en ambos
+   órdenes: "Mexico vs South Africa" y "South Africa vs Mexico").
+
+3. Busca en los indexadores configurados en `fuentes_torrent.json`. Si no encuentra
+   nada, intenta con `yt-dlp` como fallback.
+
+4. El mejor resultado se elige por puntuación:
+   - Idioma español: **+100 puntos**
+   - Partido completo: +50
+   - Calidad 1080p: +30
+   - Seeders (logarítmico): hasta +40
+   - Tamaño ideal (1.5-5 GB): +15
+   - Keywords del mundial: +10
+
+### Lógica de idioma
+
+| Idioma detectado | Estado      | ¿Sigue buscando?                        |
+|------------------|-------------|------------------------------------------|
+| Español          | `FINAL`     | No. Ya tiene la versión preferida.       |
+| Inglés           | `MEJORABLE` | Sí, pero solo si encuentra una en español. |
+| Desconocido      | `MEJORABLE` | Sí, igual que inglés.                    |
+
+Si un partido ya está en inglés y una búsqueda posterior encuentra otro resultado en
+inglés, no se vuelve a descargar. Si encuentra una versión en español, se descarga y
+el partido pasa a estado final.
+
+## Instalación
+
+### Requisitos
+
+- Python 3.10+
+- [qBittorrent](https://www.qbittorrent.org/) instalado
+- Git (para clonar el repo)
+
+### Paso a paso
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/jdfesa/mundial-2026.git
+cd mundial-2026
+
+# 2. Crear entorno virtual e instalar dependencias
+python3 -m venv venv
+source venv/bin/activate        # En Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# 3. Configurar datos locales
+cp .env.example .env
+cp fuentes_torrent.example.json fuentes_torrent.json
+cp fuentes_manuales.example.json fuentes_manuales.json
+
+# 4. Editar .env con tu ruta de descarga y credenciales de qBittorrent
+# 5. Editar fuentes_torrent.json con mirrors funcionales
+```
+
+### Setup automático (macOS)
+
+```bash
+chmod +x setup.sh
+bash setup.sh
+```
+
+Esto crea el entorno, instala dependencias, genera las carpetas de destino e instala
+la tarea de launchd para ejecución automática cada 30 minutos.
+
+### Setup automático (Windows)
+
+```bat
+run_windows.bat --dry-run
+install_windows_task.bat
+```
+
+## Configuración
+
+### `.env`
+
+Archivo con datos locales (no se sube al repo):
+
+```env
+MUNDIAL_DIRECTORIO_BASE=~/Desktop/Mundial_Partidos
+QBIT_HOST=127.0.0.1
+QBIT_PORT=8080
+QBIT_USER=admin
+QBIT_PASS=tu_contraseña
+```
+
+### `fuentes_torrent.json`
+
+Archivo con los indexadores y sus mirrors (no se sube al repo):
+
+```json
+{
+  "indexadores": [
+    {
+      "nombre": "1337x",
+      "habilitado": true,
+      "tipo": "scraper"
+    },
+    {
+      "nombre": "piratebay",
+      "habilitado": true,
+      "tipo": "api",
+      "mirrors": [
+        "https://tu-mirror-1.com",
+        "https://tu-mirror-2.com/api"
+      ]
+    }
+  ]
+}
+```
+
+Podés agregar más indexadores siguiendo el mismo formato. Si uno no responde, pasa al
+siguiente automáticamente.
+
+### `fuentes_manuales.json`
+
+Para agregar URLs específicas de partidos (replays oficiales, grabaciones propias, etc.):
+
+```json
+{
+  "fuentes": [
+    {
+      "id": 3,
+      "equipo1": "Canada",
+      "equipo2": "Bosnia-Herzegovina",
+      "url": "https://example.com/replay.mp4",
+      "titulo": "Canada_vs_Bosnia_2026_1080p_es",
+      "idioma": "es"
+    }
+  ]
+}
+```
+
+Las fuentes manuales se intentan primero. Si no hay una para el partido, el flujo normal
+sigue funcionando.
+
+## Uso
+
+### macOS
+
+```bash
+./run_macos.sh                   # Ejecutar
+./run_macos.sh --dry-run         # Simular sin descargar
+./run_macos.sh --status          # Ver estado de descargas
+./run_macos.sh --forzar 3        # Forzar descarga del partido #3
+./run_macos.sh --solo-manuales   # Solo fuentes manuales
+```
+
+### Windows
+
+```bat
+run_windows.bat --dry-run
+run_windows.bat --status
+run_windows.bat --forzar 3
+```
+
+### Directo con Python
+
+```bash
+python descargar_partidos.py --status
+python descargar_partidos.py --dry-run
+python descargar_partidos.py --forzar 1
+```
+
+## Estructura de carpetas
+
+```
+~/Desktop/Mundial_Partidos/
+├── Fase_de_Grupos/
+│   ├── Grupo_A/   (México, Sudáfrica, Corea del Sur, Rep. Checa)
+│   ├── Grupo_B/   (Canadá, Bosnia, Qatar, Suiza)
+│   ├── ...
+│   ├── Grupo_J/   (Argentina ⭐, Argelia, Austria, Jordania)
+│   └── Grupo_L/
+├── Octavos_de_Final/
+├── Cuartos_de_Final/
+├── Semifinales/
+├── Tercer_Puesto/
+└── Final/
+```
+
+## Archivos del proyecto
+
+| Archivo | En el repo | Descripción |
+|---------|:----------:|-------------|
+| `descargar_partidos.py` | ✅ | Script principal, coordinador |
+| `buscador_torrents.py` | ✅ | Motor de búsqueda multi-fuente |
+| `qbit_manager.py` | ✅ | Integración con qBittorrent (macOS/Windows/Linux) |
+| `notificador.py` | ✅ | Notificaciones del sistema |
+| `config.py` | ✅ | Configuración centralizada (lee de `.env`) |
+| `estado_descargas.py` | ✅ | Estado persistente separado del calendario |
+| `idioma_utils.py` | ✅ | Detección y clasificación de idioma |
+| `fuentes_manuales.py` | ✅ | Lógica para fuentes declaradas por el usuario |
+| `calendario_mundial_2026.json` | ✅ | 104 partidos con fechas UTC |
+| `requirements.txt` | ✅ | Dependencias Python |
+| `.env.example` | ✅ | Template para configuración local |
+| `fuentes_torrent.example.json` | ✅ | Template para indexadores |
+| `fuentes_manuales.example.json` | ✅ | Template para fuentes manuales |
+| `setup.sh` | ✅ | Setup automático macOS |
+| `run_macos.sh` | ✅ | Ejecutor portable macOS |
+| `run_windows.bat` | ✅ | Ejecutor portable Windows |
+| `install_macos_launchd.sh` | ✅ | Instala tarea launchd |
+| `install_windows_task.bat` | ✅ | Instala tarea programada Windows |
+| `.env` | ❌ | Rutas y credenciales locales |
+| `fuentes_torrent.json` | ❌ | Mirrors reales de indexadores |
+| `fuentes_manuales.json` | ❌ | URLs de partidos del usuario |
+| `estado_descargas.json` | ❌ | Estado local de descargas |
+| `mundial.log` | ❌ | Logs de ejecución |
+
+## qBittorrent
+
+La descarga vía qBittorrent intenta primero la Web API (`host:puerto`). Si la Web API
+no responde, se usa un fallback que abre el magnet link directamente con la aplicación
+asociada del sistema (`open` en macOS, `cmd /c start` en Windows, `xdg-open` en Linux).
+
+Para usar la Web API:
+
+1. Abrir qBittorrent.
+2. Ir a Preferencias > Web UI > Habilitar la interfaz de usuario web.
+3. Puerto: `8080`, usuario y contraseña a elección.
+4. Actualizar las credenciales en `.env`.
+
+## Repos útiles
+
+- [debatepro/world-cup-2026-calendar](https://github.com/debatepro/world-cup-2026-calendar) — JSON/CSV/ICS con `kickoff_utc`, estadio, ciudad. CC0/MIT.
+- [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) — Fixtures, equipos, grupos, resultados. CC0.
+- [mjwebmaster/world-cup-2026-schedule-data](https://github.com/mjwebmaster/world-cup-2026-schedule-data) — JSON/CSV/ICS alternativo.

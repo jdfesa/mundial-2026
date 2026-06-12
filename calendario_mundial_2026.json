@@ -1,0 +1,1042 @@
+[
+  {
+    "id": 1,
+    "equipo1": "México",
+    "equipo2": "Sudáfrica",
+    "grupo": "Grupo A",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-11T19:00:00Z",
+    "sede": "Ciudad de México",
+    "prioridad": "normal"
+  },
+  {
+    "id": 2,
+    "equipo1": "Corea del Sur",
+    "equipo2": "Rep. Checa",
+    "grupo": "Grupo A",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-12T02:00:00Z",
+    "sede": "Guadalajara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 3,
+    "equipo1": "Canadá",
+    "equipo2": "Bosnia-Herzegovina",
+    "grupo": "Grupo B",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-12T19:00:00Z",
+    "sede": "Toronto",
+    "prioridad": "normal"
+  },
+  {
+    "id": 4,
+    "equipo1": "Estados Unidos",
+    "equipo2": "Paraguay",
+    "grupo": "Grupo D",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-13T01:00:00Z",
+    "sede": "Los Ángeles",
+    "prioridad": "normal"
+  },
+  {
+    "id": 5,
+    "equipo1": "Qatar",
+    "equipo2": "Suiza",
+    "grupo": "Grupo B",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-13T19:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 6,
+    "equipo1": "Brasil",
+    "equipo2": "Marruecos",
+    "grupo": "Grupo C",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-13T22:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "normal"
+  },
+  {
+    "id": 7,
+    "equipo1": "Haití",
+    "equipo2": "Escocia",
+    "grupo": "Grupo C",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-14T01:00:00Z",
+    "sede": "Foxborough",
+    "prioridad": "normal"
+  },
+  {
+    "id": 8,
+    "equipo1": "Australia",
+    "equipo2": "Turquía",
+    "grupo": "Grupo D",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-14T04:00:00Z",
+    "sede": "Vancouver",
+    "prioridad": "normal"
+  },
+  {
+    "id": 9,
+    "equipo1": "Alemania",
+    "equipo2": "Curazao",
+    "grupo": "Grupo E",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-14T17:00:00Z",
+    "sede": "Houston",
+    "prioridad": "normal"
+  },
+  {
+    "id": 10,
+    "equipo1": "Países Bajos",
+    "equipo2": "Japón",
+    "grupo": "Grupo F",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-14T20:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "normal"
+  },
+  {
+    "id": 11,
+    "equipo1": "Costa de Marfil",
+    "equipo2": "Ecuador",
+    "grupo": "Grupo E",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-14T23:00:00Z",
+    "sede": "Filadelfia",
+    "prioridad": "normal"
+  },
+  {
+    "id": 12,
+    "equipo1": "Suecia",
+    "equipo2": "Túnez",
+    "grupo": "Grupo F",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-15T02:00:00Z",
+    "sede": "Monterrey",
+    "prioridad": "normal"
+  },
+  {
+    "id": 13,
+    "equipo1": "Bélgica",
+    "equipo2": "Egipto",
+    "grupo": "Grupo G",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-15T17:00:00Z",
+    "sede": "Houston",
+    "prioridad": "normal"
+  },
+  {
+    "id": 14,
+    "equipo1": "España",
+    "equipo2": "Cabo Verde",
+    "grupo": "Grupo H",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-15T17:00:00Z",
+    "sede": "Atlanta",
+    "prioridad": "normal"
+  },
+  {
+    "id": 15,
+    "equipo1": "Irán",
+    "equipo2": "Nueva Zelanda",
+    "grupo": "Grupo G",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-15T20:00:00Z",
+    "sede": "Filadelfia",
+    "prioridad": "normal"
+  },
+  {
+    "id": 16,
+    "equipo1": "Arabia Saudita",
+    "equipo2": "Uruguay",
+    "grupo": "Grupo H",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-15T23:00:00Z",
+    "sede": "Miami",
+    "prioridad": "normal"
+  },
+  {
+    "id": 17,
+    "equipo1": "Francia",
+    "equipo2": "Senegal",
+    "grupo": "Grupo I",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-16T17:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "normal"
+  },
+  {
+    "id": 18,
+    "equipo1": "Argentina",
+    "equipo2": "Argelia",
+    "grupo": "Grupo J",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-16T20:00:00Z",
+    "sede": "Kansas City",
+    "prioridad": "alta"
+  },
+  {
+    "id": 19,
+    "equipo1": "Irak",
+    "equipo2": "Noruega",
+    "grupo": "Grupo I",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-16T23:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 20,
+    "equipo1": "Austria",
+    "equipo2": "Jordania",
+    "grupo": "Grupo J",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-17T01:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 21,
+    "equipo1": "Portugal",
+    "equipo2": "RD Congo",
+    "grupo": "Grupo K",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-17T17:00:00Z",
+    "sede": "Atlanta",
+    "prioridad": "normal"
+  },
+  {
+    "id": 22,
+    "equipo1": "Inglaterra",
+    "equipo2": "Croacia",
+    "grupo": "Grupo L",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-17T20:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "normal"
+  },
+  {
+    "id": 23,
+    "equipo1": "Uzbekistán",
+    "equipo2": "Colombia",
+    "grupo": "Grupo K",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-17T23:00:00Z",
+    "sede": "Monterrey",
+    "prioridad": "normal"
+  },
+  {
+    "id": 24,
+    "equipo1": "Ghana",
+    "equipo2": "Panamá",
+    "grupo": "Grupo L",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-18T01:00:00Z",
+    "sede": "Toronto",
+    "prioridad": "normal"
+  },
+  {
+    "id": 25,
+    "equipo1": "México",
+    "equipo2": "Corea del Sur",
+    "grupo": "Grupo A",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-17T17:00:00Z",
+    "sede": "Ciudad de México",
+    "prioridad": "normal"
+  },
+  {
+    "id": 26,
+    "equipo1": "Sudáfrica",
+    "equipo2": "Rep. Checa",
+    "grupo": "Grupo A",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-17T20:00:00Z",
+    "sede": "Guadalajara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 27,
+    "equipo1": "Canadá",
+    "equipo2": "Qatar",
+    "grupo": "Grupo B",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-18T17:00:00Z",
+    "sede": "Toronto",
+    "prioridad": "normal"
+  },
+  {
+    "id": 28,
+    "equipo1": "Bosnia-Herzegovina",
+    "equipo2": "Suiza",
+    "grupo": "Grupo B",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-18T20:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 29,
+    "equipo1": "Brasil",
+    "equipo2": "Haití",
+    "grupo": "Grupo C",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-19T17:00:00Z",
+    "sede": "Foxborough",
+    "prioridad": "normal"
+  },
+  {
+    "id": 30,
+    "equipo1": "Marruecos",
+    "equipo2": "Escocia",
+    "grupo": "Grupo C",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-19T20:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "normal"
+  },
+  {
+    "id": 31,
+    "equipo1": "Estados Unidos",
+    "equipo2": "Australia",
+    "grupo": "Grupo D",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-19T23:00:00Z",
+    "sede": "Los Ángeles",
+    "prioridad": "normal"
+  },
+  {
+    "id": 32,
+    "equipo1": "Paraguay",
+    "equipo2": "Turquía",
+    "grupo": "Grupo D",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-20T01:00:00Z",
+    "sede": "Vancouver",
+    "prioridad": "normal"
+  },
+  {
+    "id": 33,
+    "equipo1": "Alemania",
+    "equipo2": "Costa de Marfil",
+    "grupo": "Grupo E",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-20T17:00:00Z",
+    "sede": "Houston",
+    "prioridad": "normal"
+  },
+  {
+    "id": 34,
+    "equipo1": "Curazao",
+    "equipo2": "Ecuador",
+    "grupo": "Grupo E",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-20T20:00:00Z",
+    "sede": "Filadelfia",
+    "prioridad": "normal"
+  },
+  {
+    "id": 35,
+    "equipo1": "Países Bajos",
+    "equipo2": "Suecia",
+    "grupo": "Grupo F",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-20T23:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "normal"
+  },
+  {
+    "id": 36,
+    "equipo1": "Japón",
+    "equipo2": "Túnez",
+    "grupo": "Grupo F",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-21T01:00:00Z",
+    "sede": "Monterrey",
+    "prioridad": "normal"
+  },
+  {
+    "id": 37,
+    "equipo1": "Bélgica",
+    "equipo2": "Irán",
+    "grupo": "Grupo G",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-21T17:00:00Z",
+    "sede": "Filadelfia",
+    "prioridad": "normal"
+  },
+  {
+    "id": 38,
+    "equipo1": "Nueva Zelanda",
+    "equipo2": "Egipto",
+    "grupo": "Grupo G",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-21T20:00:00Z",
+    "sede": "Houston",
+    "prioridad": "normal"
+  },
+  {
+    "id": 39,
+    "equipo1": "España",
+    "equipo2": "Arabia Saudita",
+    "grupo": "Grupo H",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-21T23:00:00Z",
+    "sede": "Atlanta",
+    "prioridad": "normal"
+  },
+  {
+    "id": 40,
+    "equipo1": "Uruguay",
+    "equipo2": "Cabo Verde",
+    "grupo": "Grupo H",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-22T01:00:00Z",
+    "sede": "Miami",
+    "prioridad": "normal"
+  },
+  {
+    "id": 41,
+    "equipo1": "Argentina",
+    "equipo2": "Austria",
+    "grupo": "Grupo J",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-22T20:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "alta"
+  },
+  {
+    "id": 42,
+    "equipo1": "Francia",
+    "equipo2": "Irak",
+    "grupo": "Grupo I",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-22T17:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "normal"
+  },
+  {
+    "id": 43,
+    "equipo1": "Noruega",
+    "equipo2": "Senegal",
+    "grupo": "Grupo I",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-22T20:00:00Z",
+    "sede": "Foxborough",
+    "prioridad": "normal"
+  },
+  {
+    "id": 44,
+    "equipo1": "Jordania",
+    "equipo2": "Argelia",
+    "grupo": "Grupo J",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-22T23:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 45,
+    "equipo1": "Portugal",
+    "equipo2": "Uzbekistán",
+    "grupo": "Grupo K",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-23T17:00:00Z",
+    "sede": "Monterrey",
+    "prioridad": "normal"
+  },
+  {
+    "id": 46,
+    "equipo1": "Colombia",
+    "equipo2": "RD Congo",
+    "grupo": "Grupo K",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-23T20:00:00Z",
+    "sede": "Atlanta",
+    "prioridad": "normal"
+  },
+  {
+    "id": 47,
+    "equipo1": "Inglaterra",
+    "equipo2": "Ghana",
+    "grupo": "Grupo L",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-23T17:00:00Z",
+    "sede": "Toronto",
+    "prioridad": "normal"
+  },
+  {
+    "id": 48,
+    "equipo1": "Panamá",
+    "equipo2": "Croacia",
+    "grupo": "Grupo L",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-23T20:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "normal"
+  },
+  {
+    "id": 49,
+    "equipo1": "Rep. Checa",
+    "equipo2": "México",
+    "grupo": "Grupo A",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-23T22:00:00Z",
+    "sede": "Ciudad de México",
+    "prioridad": "normal"
+  },
+  {
+    "id": 50,
+    "equipo1": "Sudáfrica",
+    "equipo2": "Corea del Sur",
+    "grupo": "Grupo A",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-23T22:00:00Z",
+    "sede": "Guadalajara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 51,
+    "equipo1": "Suiza",
+    "equipo2": "Canadá",
+    "grupo": "Grupo B",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-24T22:00:00Z",
+    "sede": "Toronto",
+    "prioridad": "normal"
+  },
+  {
+    "id": 52,
+    "equipo1": "Bosnia-Herzegovina",
+    "equipo2": "Qatar",
+    "grupo": "Grupo B",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-24T22:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 53,
+    "equipo1": "Escocia",
+    "equipo2": "Brasil",
+    "grupo": "Grupo C",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-25T22:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "normal"
+  },
+  {
+    "id": 54,
+    "equipo1": "Marruecos",
+    "equipo2": "Haití",
+    "grupo": "Grupo C",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-25T22:00:00Z",
+    "sede": "Foxborough",
+    "prioridad": "normal"
+  },
+  {
+    "id": 55,
+    "equipo1": "Turquía",
+    "equipo2": "Estados Unidos",
+    "grupo": "Grupo D",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-25T01:00:00Z",
+    "sede": "Los Ángeles",
+    "prioridad": "normal"
+  },
+  {
+    "id": 56,
+    "equipo1": "Australia",
+    "equipo2": "Paraguay",
+    "grupo": "Grupo D",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-25T01:00:00Z",
+    "sede": "Vancouver",
+    "prioridad": "normal"
+  },
+  {
+    "id": 57,
+    "equipo1": "Ecuador",
+    "equipo2": "Alemania",
+    "grupo": "Grupo E",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-25T22:00:00Z",
+    "sede": "Houston",
+    "prioridad": "normal"
+  },
+  {
+    "id": 58,
+    "equipo1": "Costa de Marfil",
+    "equipo2": "Curazao",
+    "grupo": "Grupo E",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-25T22:00:00Z",
+    "sede": "Filadelfia",
+    "prioridad": "normal"
+  },
+  {
+    "id": 59,
+    "equipo1": "Túnez",
+    "equipo2": "Países Bajos",
+    "grupo": "Grupo F",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T01:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "normal"
+  },
+  {
+    "id": 60,
+    "equipo1": "Japón",
+    "equipo2": "Suecia",
+    "grupo": "Grupo F",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T01:00:00Z",
+    "sede": "Monterrey",
+    "prioridad": "normal"
+  },
+  {
+    "id": 61,
+    "equipo1": "Egipto",
+    "equipo2": "Irán",
+    "grupo": "Grupo G",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T17:00:00Z",
+    "sede": "Houston",
+    "prioridad": "normal"
+  },
+  {
+    "id": 62,
+    "equipo1": "Nueva Zelanda",
+    "equipo2": "Bélgica",
+    "grupo": "Grupo G",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T17:00:00Z",
+    "sede": "Filadelfia",
+    "prioridad": "normal"
+  },
+  {
+    "id": 63,
+    "equipo1": "Cabo Verde",
+    "equipo2": "Arabia Saudita",
+    "grupo": "Grupo H",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T22:00:00Z",
+    "sede": "Atlanta",
+    "prioridad": "normal"
+  },
+  {
+    "id": 64,
+    "equipo1": "Uruguay",
+    "equipo2": "España",
+    "grupo": "Grupo H",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T22:00:00Z",
+    "sede": "Miami",
+    "prioridad": "normal"
+  },
+  {
+    "id": 65,
+    "equipo1": "Noruega",
+    "equipo2": "Francia",
+    "grupo": "Grupo I",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T22:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "normal"
+  },
+  {
+    "id": 66,
+    "equipo1": "Senegal",
+    "equipo2": "Irak",
+    "grupo": "Grupo I",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-26T22:00:00Z",
+    "sede": "Foxborough",
+    "prioridad": "normal"
+  },
+  {
+    "id": 67,
+    "equipo1": "Jordania",
+    "equipo2": "Argentina",
+    "grupo": "Grupo J",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-27T22:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "alta"
+  },
+  {
+    "id": 68,
+    "equipo1": "Argelia",
+    "equipo2": "Austria",
+    "grupo": "Grupo J",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-27T22:00:00Z",
+    "sede": "Santa Clara",
+    "prioridad": "normal"
+  },
+  {
+    "id": 69,
+    "equipo1": "Colombia",
+    "equipo2": "Portugal",
+    "grupo": "Grupo K",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-27T22:00:00Z",
+    "sede": "Atlanta",
+    "prioridad": "normal"
+  },
+  {
+    "id": 70,
+    "equipo1": "RD Congo",
+    "equipo2": "Uzbekistán",
+    "grupo": "Grupo K",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-27T22:00:00Z",
+    "sede": "Monterrey",
+    "prioridad": "normal"
+  },
+  {
+    "id": 71,
+    "equipo1": "Panamá",
+    "equipo2": "Inglaterra",
+    "grupo": "Grupo L",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-27T22:00:00Z",
+    "sede": "Toronto",
+    "prioridad": "normal"
+  },
+  {
+    "id": 72,
+    "equipo1": "Croacia",
+    "equipo2": "Ghana",
+    "grupo": "Grupo L",
+    "fase": "grupo",
+    "fecha_hora_utc": "2026-06-27T22:00:00Z",
+    "sede": "Arlington",
+    "prioridad": "normal"
+  },
+  {
+    "id": 73,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 1",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-28T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 74,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 2",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-28T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 75,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 3",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-29T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 76,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 4",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-29T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 77,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 5",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-29T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 78,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 6",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-30T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 79,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 7",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-30T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 80,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 8",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-06-30T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 81,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 9",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-01T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 82,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 10",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-01T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 83,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 11",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-01T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 84,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 12",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-02T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 85,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 13",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-02T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 86,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 14",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-02T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 87,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 15",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-03T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 88,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Octavos 16",
+    "fase": "octavos",
+    "fecha_hora_utc": "2026-07-03T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 89,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 1",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-04T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 90,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 2",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-04T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 91,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 3",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-05T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 92,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 4",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-05T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 93,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 5",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-05T21:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 94,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 6",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-06T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 95,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 7",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-07T01:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 96,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Cuartos 8",
+    "fase": "cuartos",
+    "fecha_hora_utc": "2026-07-07T17:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 97,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Semi 1",
+    "fase": "semifinal",
+    "fecha_hora_utc": "2026-07-09T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 98,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Semi 2",
+    "fase": "semifinal",
+    "fecha_hora_utc": "2026-07-10T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 99,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Semi 3",
+    "fase": "semifinal",
+    "fecha_hora_utc": "2026-07-11T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 100,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Semi 4",
+    "fase": "semifinal",
+    "fecha_hora_utc": "2026-07-11T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 101,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Semifinal 1",
+    "fase": "semifinal",
+    "fecha_hora_utc": "2026-07-14T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 102,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Semifinal 2",
+    "fase": "semifinal",
+    "fecha_hora_utc": "2026-07-15T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 103,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Tercer Puesto",
+    "fase": "tercer_puesto",
+    "fecha_hora_utc": "2026-07-18T22:00:00Z",
+    "sede": "Por definir",
+    "prioridad": "normal"
+  },
+  {
+    "id": 104,
+    "equipo1": "Por definir",
+    "equipo2": "Por definir",
+    "grupo": "Final",
+    "fase": "final",
+    "fecha_hora_utc": "2026-07-19T22:00:00Z",
+    "sede": "East Rutherford",
+    "prioridad": "alta"
+  }
+]

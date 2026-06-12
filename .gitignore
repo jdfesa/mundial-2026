@@ -1,0 +1,20 @@
+# Entorno y datos locales
+.env
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Fuentes torrent (datos del usuario, no del repo)
+fuentes_torrent.json
+fuentes_manuales.json
+
+# Estado local de descargas (varía por usuario)
+estado_descargas.json
+estado_partidos.txt
+mundial.log
+launchd_stdout.log
+launchd_stderr.log
+
+# launchd plist con rutas absolutas personales
+com.mundial.descargador.plist

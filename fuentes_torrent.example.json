@@ -1,0 +1,21 @@
+{
+  "indexadores": [
+    {
+      "nombre": "1337x",
+      "habilitado": true,
+      "tipo": "scraper",
+      "notas": "Usa la librería py1337x. No requiere mirrors."
+    },
+    {
+      "nombre": "piratebay",
+      "habilitado": true,
+      "tipo": "api",
+      "mirrors": [
+        "https://tu-mirror-preferido.example.com",
+        "https://otro-mirror.example.com/api"
+      ],
+      "notas": "Reemplaza los mirrors con URLs funcionales de la API de TPB."
+    }
+  ],
+  "_instrucciones": "Copia este archivo como fuentes_torrent.json y completá los mirrors reales. Podés agregar más indexadores siguiendo el mismo formato."
+}
