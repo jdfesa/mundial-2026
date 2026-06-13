@@ -57,6 +57,18 @@ def es_partido_completo(titulo: str) -> bool:
     return True
 
 
+def titulo_menciona_equipos(titulo: str, equipo1: str, equipo2: str) -> bool:
+    """Verifica que el título mencione al menos uno de los equipos del partido."""
+    titulo_lower = normalizar_texto(titulo)
+    nombres = [
+        normalizar_texto(equipo1),
+        normalizar_texto(equipo2),
+        normalizar_texto(_traducir_equipo(equipo1)),
+        normalizar_texto(_traducir_equipo(equipo2)),
+    ]
+    return any(n and n in titulo_lower for n in nombres)
+
+
 def calcular_puntuacion(titulo: str, seeders: int, tamano_gb: float) -> float:
     """
     Calcula una puntuación para un resultado de torrent.
@@ -439,6 +451,312 @@ def buscar_piratebay(equipo1: str, equipo2: str) -> list[dict]:
     return resultados
 
 
+# ─── Fuente: TorrentGalaxy (scraper) ─────────────────────────────────────────
+
+def buscar_torrentgalaxy(equipo1: str, equipo2: str) -> list[dict]:
+    """Busca torrents en TorrentGalaxy via scraping HTML."""
+    if not config.indexador_habilitado("torrentgalaxy"):
+        return []
+
+    datos_fuentes = config.cargar_fuentes_torrent()
+    mirrors = []
+    for idx in datos_fuentes.get("indexadores", []):
+        if idx.get("nombre") == "torrentgalaxy" and idx.get("habilitado"):
+            mirrors = idx.get("mirrors", ["https://torrentgalaxy.to"])
+            break
+    if not mirrors:
+        mirrors = ["https://torrentgalaxy.to"]
+
+    resultados = []
+    queries = generar_queries(equipo1, equipo2)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    for query in queries[:5]:
+        for mirror in mirrors:
+            try:
+                url = f"{mirror}/torrents.php?search={quote_plus(query)}&cat=41&sort=seeders&order=desc"
+                logger.debug(f"[TGx] Buscando: {url}")
+
+                resp = requests.get(url, headers=headers, timeout=15)
+                if resp.status_code != 200:
+                    continue
+
+                soup = BeautifulSoup(resp.text, "html.parser")
+                filas = soup.select("div.tgxtablerow")
+
+                for fila in filas[:10]:
+                    # Titulo
+                    link_titulo = fila.select_one("a.txlight")
+                    if not link_titulo:
+                        continue
+                    titulo = link_titulo.get_text(strip=True)
+
+                    if not es_partido_completo(titulo):
+                        continue
+
+                    # Magnet
+                    link_magnet = fila.select_one('a[href^="magnet:"]')
+                    if not link_magnet:
+                        continue
+                    magnet = link_magnet["href"]
+
+                    # Seeders
+                    span_seed = fila.select_one('span[title="Seeders/Leechers"] b')
+                    if not span_seed:
+                        # Alternativa: buscar en fonts con color verde
+                        font_seed = fila.select_one('font[color="green"]')
+                        seeders = int(font_seed.get_text(strip=True)) if font_seed else 0
+                    else:
+                        seeders = int(span_seed.get_text(strip=True))
+
+                    if seeders < config.MIN_SEEDERS:
+                        continue
+
+                    # Tamaño
+                    span_size = fila.select_one('span.badge-secondary')
+                    tamano_str = span_size.get_text(strip=True) if span_size else "0 GB"
+                    tamano_gb = normalizar_tamano_gb(tamano_str)
+
+                    if tamano_gb < config.TAMANO_MIN_GB:
+                        continue
+
+                    puntuacion = calcular_puntuacion(titulo, seeders, tamano_gb)
+                    hash_match = re.search(r'btih:([a-fA-F0-9]+)', magnet)
+
+                    resultados.append({
+                        "titulo": titulo,
+                        "magnet": magnet,
+                        "torrent_hash": hash_match.group(1).lower() if hash_match else None,
+                        "seeders": seeders,
+                        "tamano_gb": round(tamano_gb, 2),
+                        "fuente": "torrentgalaxy",
+                        "puntuacion": puntuacion,
+                    })
+
+                time.sleep(1)
+                break  # Si un mirror funcionó, no probar los demás
+
+            except Exception as e:
+                logger.debug(f"[TGx] Error en mirror {mirror}: {e}")
+                continue
+
+    return resultados
+
+
+# ─── Fuente: LimeTorrents (scraper) ──────────────────────────────────────────
+
+def buscar_limetorrents(equipo1: str, equipo2: str) -> list[dict]:
+    """Busca torrents en LimeTorrents via scraping HTML."""
+    if not config.indexador_habilitado("limetorrents"):
+        return []
+
+    datos_fuentes = config.cargar_fuentes_torrent()
+    mirrors = []
+    for idx in datos_fuentes.get("indexadores", []):
+        if idx.get("nombre") == "limetorrents" and idx.get("habilitado"):
+            mirrors = idx.get("mirrors", ["https://www.limetorrents.lol"])
+            break
+    if not mirrors:
+        mirrors = ["https://www.limetorrents.lol"]
+
+    resultados = []
+    queries = generar_queries(equipo1, equipo2)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    for query in queries[:5]:
+        for mirror in mirrors:
+            try:
+                search_term = query.replace(" ", "-")
+                url = f"{mirror}/search/all/{quote_plus(search_term)}/seeds/1/"
+                logger.debug(f"[Lime] Buscando: {url}")
+
+                resp = requests.get(url, headers=headers, timeout=15)
+                if resp.status_code != 200:
+                    continue
+
+                soup = BeautifulSoup(resp.text, "html.parser")
+                tabla = soup.select_one("table.table2")
+                if not tabla:
+                    continue
+
+                filas = tabla.select("tr")[1:]  # Saltar header
+
+                for fila in filas[:10]:
+                    celdas = fila.select("td")
+                    if len(celdas) < 5:
+                        continue
+
+                    # Titulo y link al detalle
+                    link_titulo = celdas[0].select_one("a")
+                    if not link_titulo:
+                        continue
+                    titulo = link_titulo.get_text(strip=True)
+
+                    if not es_partido_completo(titulo):
+                        continue
+
+                    # Link a la pagina de detalle para obtener magnet
+                    href = link_titulo.get("href", "")
+                    if not href:
+                        continue
+
+                    # Seeders (columna 3)
+                    try:
+                        seeders = int(celdas[3].get_text(strip=True).replace(",", ""))
+                    except (ValueError, IndexError):
+                        seeders = 0
+
+                    if seeders < config.MIN_SEEDERS:
+                        continue
+
+                    # Tamaño (columna 2)
+                    tamano_str = celdas[2].get_text(strip=True)
+                    tamano_gb = normalizar_tamano_gb(tamano_str)
+
+                    if tamano_gb < config.TAMANO_MIN_GB:
+                        continue
+
+                    # Obtener magnet desde la pagina de detalle
+                    try:
+                        detail_url = href if href.startswith("http") else f"{mirror}{href}"
+                        resp_detail = requests.get(detail_url, headers=headers, timeout=10)
+                        soup_detail = BeautifulSoup(resp_detail.text, "html.parser")
+                        magnet_link = soup_detail.select_one('a[href^="magnet:"]')
+                        if not magnet_link:
+                            continue
+                        magnet = magnet_link["href"]
+                    except Exception:
+                        continue
+
+                    puntuacion = calcular_puntuacion(titulo, seeders, tamano_gb)
+                    hash_match = re.search(r'btih:([a-fA-F0-9]+)', magnet)
+
+                    resultados.append({
+                        "titulo": titulo,
+                        "magnet": magnet,
+                        "torrent_hash": hash_match.group(1).lower() if hash_match else None,
+                        "seeders": seeders,
+                        "tamano_gb": round(tamano_gb, 2),
+                        "fuente": "limetorrents",
+                        "puntuacion": puntuacion,
+                    })
+
+                time.sleep(1)
+                break
+
+            except Exception as e:
+                logger.debug(f"[Lime] Error en mirror {mirror}: {e}")
+                continue
+
+    return resultados
+
+
+# ─── Fuente: BTDIG (DHT search engine) ───────────────────────────────────────
+
+def buscar_btdig(equipo1: str, equipo2: str) -> list[dict]:
+    """Busca torrents en BTDIG (motor de búsqueda DHT, no requiere tracker)."""
+    if not config.indexador_habilitado("btdig"):
+        return []
+
+    datos_fuentes = config.cargar_fuentes_torrent()
+    base_url = "https://btdig.com"
+    for idx in datos_fuentes.get("indexadores", []):
+        if idx.get("nombre") == "btdig" and idx.get("habilitado"):
+            base_url = idx.get("url", base_url)
+            break
+
+    resultados = []
+    queries = generar_queries(equipo1, equipo2)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    trackers = [
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.torrent.eu.org:451/announce",
+        "udp://tracker.dler.org:6969/announce",
+        "udp://exodus.desync.com:6969",
+        "udp://open.demonii.com:1337/announce",
+    ]
+    tracker_str = "&".join([f"tr={quote_plus(t)}" for t in trackers])
+
+    for query in queries[:4]:
+        try:
+            url = f"{base_url}/search?q={quote_plus(query)}&order=0"
+            logger.debug(f"[BTDIG] Buscando: {url}")
+
+            resp = requests.get(url, headers=headers, timeout=15)
+            if resp.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            items = soup.select("div.one_result")
+
+            for item in items[:10]:
+                # Titulo
+                link_titulo = item.select_one("div.torrent_name a")
+                if not link_titulo:
+                    continue
+                titulo = link_titulo.get_text(strip=True)
+
+                if not es_partido_completo(titulo):
+                    continue
+
+                if not titulo_menciona_equipos(titulo, equipo1, equipo2):
+                    continue
+
+                # Hash (desde el href)
+                href = link_titulo.get("href", "")
+                hash_match = re.search(r'/([a-fA-F0-9]{40})/', href)
+                if not hash_match:
+                    continue
+                info_hash = hash_match.group(1).lower()
+
+                # Tamaño
+                span_size = item.select_one("span.torrent_size")
+                tamano_str = span_size.get_text(strip=True) if span_size else "0 GB"
+                tamano_gb = normalizar_tamano_gb(tamano_str)
+
+                if tamano_gb < config.TAMANO_MIN_GB:
+                    continue
+
+                # BTDIG no muestra seeders; usar 1 como estimación conservadora
+                # para que no se descarte pero tampoco gane por seeders
+                seeders = 1
+
+                magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={quote_plus(titulo)}&{tracker_str}"
+                puntuacion = calcular_puntuacion(titulo, seeders, tamano_gb)
+
+                resultados.append({
+                    "titulo": titulo,
+                    "magnet": magnet,
+                    "torrent_hash": info_hash,
+                    "seeders": seeders,
+                    "tamano_gb": round(tamano_gb, 2),
+                    "fuente": "btdig",
+                    "puntuacion": puntuacion,
+                })
+
+            time.sleep(1)
+
+        except Exception as e:
+            logger.debug(f"[BTDIG] Error buscando '{query}': {e}")
+            continue
+
+    return resultados
+
+
 # ─── Fuente: yt-dlp (fallback) ───────────────────────────────────────────────
 
 def buscar_ytdlp(equipo1: str, equipo2: str, directorio_destino: str) -> dict | None:
@@ -608,10 +926,37 @@ def buscar_partido(equipo1: str, equipo2: str) -> list[dict]:
     except Exception as e:
         logger.error(f"  [TPB] Error: {e}")
 
-    # Eliminar duplicados por magnet hash
+    # Buscar en TorrentGalaxy
+    try:
+        resultados_tgx = buscar_torrentgalaxy(equipo1, equipo2)
+        todos_resultados.extend(resultados_tgx)
+        logger.info(f"  [TGx] {len(resultados_tgx)} resultados")
+    except Exception as e:
+        logger.error(f"  [TGx] Error: {e}")
+
+    # Buscar en LimeTorrents
+    try:
+        resultados_lime = buscar_limetorrents(equipo1, equipo2)
+        todos_resultados.extend(resultados_lime)
+        logger.info(f"  [Lime] {len(resultados_lime)} resultados")
+    except Exception as e:
+        logger.error(f"  [Lime] Error: {e}")
+
+    # Buscar en BTDIG (DHT)
+    try:
+        resultados_btdig = buscar_btdig(equipo1, equipo2)
+        todos_resultados.extend(resultados_btdig)
+        logger.info(f"  [BTDIG] {len(resultados_btdig)} resultados")
+    except Exception as e:
+        logger.error(f"  [BTDIG] Error: {e}")
+
+    # Eliminar duplicados por magnet hash y filtrar irrelevantes
     vistos = set()
     unicos = []
     for r in todos_resultados:
+        # Filtrar resultados que no mencionan a ninguno de los equipos
+        if not titulo_menciona_equipos(r.get("titulo", ""), equipo1, equipo2):
+            continue
         # Extraer hash del magnet para deduplicar
         hash_match = re.search(r'btih:([a-fA-F0-9]+)', r.get("magnet", ""))
         if hash_match:
