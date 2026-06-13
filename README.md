@@ -1,5 +1,7 @@
 # ⚽ Descargador Mundial 2026
 
+![Biblioteca local de partidos](img/biblioteca_web.png)
+
 ## Aviso Legal
 
 Este proyecto es una herramienta de automatización con fines educativos, técnicos y de uso
