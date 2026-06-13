@@ -137,6 +137,9 @@ FUENTES_HABILITADAS = {
     "manuales": True,  # URLs declaradas por vos en fuentes_manuales.json
     "1337x": True,
     "piratebay": True,
+    "torrentgalaxy": True,
+    "limetorrents": True,
+    "btdig": True,  # Motor de búsqueda DHT, no requiere tracker
     "yt_dlp": True,  # Fallback con yt-dlp (YouTube, Dailymotion, etc.)
 }
 

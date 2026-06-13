@@ -1,0 +1,46 @@
+{
+  "indexadores": [
+    {
+      "nombre": "1337x",
+      "habilitado": true,
+      "tipo": "scraper",
+      "notas": "Usa la librería py1337x para buscar y obtener magnets"
+    },
+    {
+      "nombre": "piratebay",
+      "habilitado": true,
+      "tipo": "api",
+      "mirrors": [
+        "https://apibay.org",
+        "https://tpb.party/api"
+      ]
+    },
+    {
+      "nombre": "torrentgalaxy",
+      "habilitado": true,
+      "tipo": "scraper",
+      "mirrors": [
+        "https://torrentgalaxy.to",
+        "https://tgx.rs"
+      ],
+      "notas": "Tracker popular recomendado en r/piracy y r/footballhighlights. Cat 41 = TV Shows (incluye deportes)"
+    },
+    {
+      "nombre": "limetorrents",
+      "habilitado": true,
+      "tipo": "scraper",
+      "mirrors": [
+        "https://www.limetorrents.lol",
+        "https://www.limetorrents.to"
+      ],
+      "notas": "Tracker alternativo con buena cobertura de deportes. Requiere scraping de pagina de detalle para magnet"
+    },
+    {
+      "nombre": "btdig",
+      "habilitado": true,
+      "tipo": "dht",
+      "url": "https://btdig.com",
+      "notas": "Motor de busqueda DHT. No requiere tracker, indexa directamente la red BitTorrent. No tiene seeders reales pero encuentra contenido que otros trackers no listan"
+    }
+  ]
+}
