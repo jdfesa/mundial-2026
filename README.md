@@ -30,30 +30,36 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 ## Cómo funciona
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  launchd / Task Scheduler (cada 30 min)                        │
-│      └── descargar_partidos.py                                 │
-│              ├── Lee calendario_mundial_2026.json (104 matches) │
-│              ├── ¿Partido terminó hace +3 horas? ──► buscar    │
-│              ├── buscador_torrents.py                           │
-│              │       ├── busqueda_reglas.py                    │
-│              │       ├── fuentes_torrent.py + fuentes_*.json   │
-│              │       ├── fallback_ytdlp.py                     │
-│              │       └── groq_asistente.py (opcional)          │
-│              ├── qbit_manager.py ──► qBittorrent               │
-│              ├── organizador_descargas.py                      │
-│              ├── verificador_archivos.py                       │
-│              ├── reporte_diario.py                             │
-│              ├── indice_biblioteca.py                          │
-│              └── ~/Desktop/Mundial_Partidos/                   │
-│                      ├── Fase_de_Grupos/Grupo_A/               │
-│                      ├── Fase_de_Grupos/Grupo_B/               │
-│                      ├── ...                                   │
-│                      ├── Octavos_de_Final/                     │
-│                      ├── Cuartos_de_Final/                     │
-│                      ├── Semifinales/                          │
-│                      └── Final/                                │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  launchd / Task Scheduler (cada 30 min)                             │
+│      └── descargar_partidos.py (orquestador)                        │
+│              ├── config.py + .env                                   │
+│              ├── calendario_mundial_2026.json (104 partidos)        │
+│              ├── estado_descargas.py ──► estado_descargas.json      │
+│              │       └── historial sin depender de archivos locales │
+│              ├── ¿Partido terminó hace +3 horas? ──► buscar         │
+│              ├── buscador_torrents.py (fachada + ranking final)     │
+│              │       ├── busqueda_reglas.py                         │
+│              │       ├── fuentes_manuales.py + JSON manual          │
+│              │       ├── fuentes_torrent.py + JSON de mirrors       │
+│              │       ├── fallback_ytdlp.py                          │
+│              │       └── groq_asistente.py (opcional)               │
+│              ├── qbit_manager.py ──► qBittorrent Web API            │
+│              ├── organizador_descargas.py ──► mueve torrents 100%   │
+│              ├── verificador_archivos.py                            │
+│              │       ├── idioma_utils.py                            │
+│              │       └── nombres_archivos.py                        │
+│              ├── reporte_diario.py                                  │
+│              ├── indice_biblioteca.py                               │
+│              └── ~/Desktop/Mundial_Partidos/                        │
+│                      ├── Fase_de_Grupos/Grupo_A/                    │
+│                      ├── Fase_de_Grupos/Grupo_B/                    │
+│                      ├── ...                                        │
+│                      ├── Octavos_de_Final/                          │
+│                      ├── Cuartos_de_Final/                          │
+│                      ├── Semifinales/                               │
+│                      └── Final/                                     │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Lógica de búsqueda
