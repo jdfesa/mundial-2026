@@ -15,6 +15,31 @@
         "https://otro-mirror.example.com/api"
       ],
       "notas": "Reemplaza los mirrors con URLs funcionales de la API de TPB."
+    },
+    {
+      "nombre": "torrentgalaxy",
+      "habilitado": true,
+      "tipo": "scraper",
+      "mirrors": [
+        "https://torrentgalaxy.to"
+      ],
+      "notas": "Mirror HTML de TorrentGalaxy. Si deja de responder, cambia el mirror."
+    },
+    {
+      "nombre": "limetorrents",
+      "habilitado": true,
+      "tipo": "scraper",
+      "mirrors": [
+        "https://www.limetorrents.lol"
+      ],
+      "notas": "Mirror HTML de LimeTorrents. Puede variar con el tiempo."
+    },
+    {
+      "nombre": "btdig",
+      "habilitado": true,
+      "tipo": "dht",
+      "url": "https://btdig.com",
+      "notas": "Motor DHT sin seeders confiables; se puntúa de forma conservadora."
     }
   ],
   "_instrucciones": "Copia este archivo como fuentes_torrent.json y completá los mirrors reales. Podés agregar más indexadores siguiendo el mismo formato."
