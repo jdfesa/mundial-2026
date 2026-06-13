@@ -65,6 +65,10 @@ QBIT_MOVER_COMPLETADOS = os.getenv("QBIT_MOVER_COMPLETADOS", "1") not in {"0", "
 QBIT_BUSCAR_TODAS_LAS_DESCARGAS = (
     os.getenv("QBIT_BUSCAR_TODAS_LAS_DESCARGAS", "1") not in {"0", "false", "False"}
 )
+QBIT_LIMPIAR_AUXILIARES = (
+    os.getenv("QBIT_LIMPIAR_AUXILIARES", "1") not in {"0", "false", "False"}
+)
+QBIT_EXTENSIONES_AUXILIARES = {".nfo", ".txt", ".url"}
 
 # ─── Tiempos ─────────────────────────────────────────────────────────────────
 # Horas de espera después de que EMPIEZA el partido antes de buscar
