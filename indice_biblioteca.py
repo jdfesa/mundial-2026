@@ -18,6 +18,58 @@ from idioma_utils import etiqueta_idioma
 
 logger = logging.getLogger("mundial")
 
+FLAG_MAP: dict[str, tuple[str, str]] = {
+    "Alemania": ("🇩🇪", "DE"),
+    "Arabia Saudita": ("🇸🇦", "SA"),
+    "Argelia": ("🇩🇿", "DZ"),
+    "Argentina": ("🇦🇷", "AR"),
+    "Australia": ("🇦🇺", "AU"),
+    "Austria": ("🇦🇹", "AT"),
+    "Bosnia-Herzegovina": ("🇧🇦", "BA"),
+    "Brasil": ("🇧🇷", "BR"),
+    "Bélgica": ("🇧🇪", "BE"),
+    "Cabo Verde": ("🇨🇻", "CV"),
+    "Canadá": ("🇨🇦", "CA"),
+    "Colombia": ("🇨🇴", "CO"),
+    "Corea del Sur": ("🇰🇷", "KR"),
+    "Costa de Marfil": ("🇨🇮", "CI"),
+    "Croacia": ("🇭🇷", "HR"),
+    "Curazao": ("🇨🇼", "CW"),
+    "Ecuador": ("🇪🇨", "EC"),
+    "Egipto": ("🇪🇬", "EG"),
+    "Escocia": ("🏴", "SCO"),
+    "España": ("🇪🇸", "ES"),
+    "Estados Unidos": ("🇺🇸", "US"),
+    "Francia": ("🇫🇷", "FR"),
+    "Ghana": ("🇬🇭", "GH"),
+    "Haití": ("🇭🇹", "HT"),
+    "Inglaterra": ("🏴", "ENG"),
+    "Irak": ("🇮🇶", "IQ"),
+    "Irán": ("🇮🇷", "IR"),
+    "Japón": ("🇯🇵", "JP"),
+    "Jordania": ("🇯🇴", "JO"),
+    "Marruecos": ("🇲🇦", "MA"),
+    "México": ("🇲🇽", "MX"),
+    "Noruega": ("🇳🇴", "NO"),
+    "Nueva Zelanda": ("🇳🇿", "NZ"),
+    "Panamá": ("🇵🇦", "PA"),
+    "Paraguay": ("🇵🇾", "PY"),
+    "Países Bajos": ("🇳🇱", "NL"),
+    "Por definir": ("", "TBD"),
+    "Portugal": ("🇵🇹", "PT"),
+    "Qatar": ("🇶🇦", "QA"),
+    "RD Congo": ("🇨🇩", "CD"),
+    "Rep. Checa": ("🇨🇿", "CZ"),
+    "Senegal": ("🇸🇳", "SN"),
+    "Sudáfrica": ("🇿🇦", "ZA"),
+    "Suecia": ("🇸🇪", "SE"),
+    "Suiza": ("🇨🇭", "CH"),
+    "Turquía": ("🇹🇷", "TR"),
+    "Túnez": ("🇹🇳", "TN"),
+    "Uruguay": ("🇺🇾", "UY"),
+    "Uzbekistán": ("🇺🇿", "UZ"),
+}
+
 
 def _parse_utc(valor: str | None) -> datetime | None:
     if not valor:
@@ -38,6 +90,32 @@ def _fecha_local(partido: dict) -> datetime | None:
 
 def _nombre_partido(partido: dict) -> str:
     return f"{partido.get('equipo1', 'Por definir')} vs {partido.get('equipo2', 'Por definir')}"
+
+
+def _render_flag(equipo: str | None) -> str:
+    nombre = equipo or "Por definir"
+    emoji, codigo = FLAG_MAP.get(nombre, ("", ""))
+    emoji = emoji or "?"
+    codigo = codigo or "?"
+    return (
+        f"<span class=\"team-flag\" title=\"{html.escape(nombre, quote=True)}\">"
+        f"<span class=\"flag-emoji\" aria-hidden=\"true\">{html.escape(emoji)}</span>"
+        f"<span class=\"flag-code\">{html.escape(codigo)}</span>"
+        "</span>"
+    )
+
+
+def _render_flag_pair(partido: dict, class_name: str = "flags") -> str:
+    equipo1 = partido.get("equipo1") or "Por definir"
+    equipo2 = partido.get("equipo2") or "Por definir"
+    nombre = _nombre_partido(partido)
+    return (
+        f"<span class=\"{class_name}\" aria-label=\"{html.escape(nombre, quote=True)}\">"
+        f"{_render_flag(equipo1)}"
+        "<span class=\"vs\">VS</span>"
+        f"{_render_flag(equipo2)}"
+        "</span>"
+    )
 
 
 def _directorio_partido(partido: dict) -> str:
@@ -85,6 +163,10 @@ def _estado_tarjeta(partido: dict) -> tuple[str, str, str]:
     if partido.get("descargado"):
         return "eliminado", "Video eliminado", "Fue descargado, pero no hay una ruta guardada"
     return "pendiente", "Aun no disponible", "Todavia no se descargo"
+
+
+def _visible_por_defecto(estado_key: str) -> bool:
+    return estado_key in {"disponible", "mejorable"}
 
 
 def _href(path: str) -> str:
@@ -169,6 +251,7 @@ def _render_card(partido: dict) -> str:
     )
     data_text = _texto_busqueda(partido, archivo)
     numero = str(partido.get("id", "?")).zfill(3) if partido.get("id") is not None else "--"
+    hidden_class = "" if _visible_por_defecto(estado_key) else " hidden"
 
     if archivo:
         accion = (
@@ -185,10 +268,10 @@ def _render_card(partido: dict) -> str:
         accion = "<div class=\"empty-action\">Aun no disponible</div>"
 
     return f"""
-    <article class="match-card status-{estado_key}" data-status="{estado_key}" data-text="{data_text}">
+    <article class="match-card status-{estado_key}{hidden_class}" data-status="{estado_key}" data-text="{data_text}">
       <div class="thumb">
         <span class="match-number">{html.escape(numero)}</span>
-        <span class="vs">VS</span>
+        {_render_flag_pair(partido)}
       </div>
       <div class="card-body">
         <div class="meta-row">
@@ -201,7 +284,7 @@ def _render_card(partido: dict) -> str:
           <span class="badge">{html.escape(idioma)}</span>
         </div>
         <p class="detail">{html.escape(estado_detalle)}</p>
-        {accion}
+        <div class="card-action">{accion}</div>
       </div>
     </article>
     """
@@ -211,11 +294,13 @@ def _render_calendar_row(partido: dict) -> str:
     archivo = _archivo_portable(partido)
     estado_key, estado_label, _ = _estado_tarjeta(partido)
     data_text = _texto_busqueda(partido, archivo)
+    hidden_class = "" if _visible_por_defecto(estado_key) else " hidden"
     return (
-        f"<tr class=\"calendar-row status-{estado_key}\" data-status=\"{estado_key}\" "
+        f"<tr class=\"calendar-row status-{estado_key}{hidden_class}\" data-status=\"{estado_key}\" "
         f"data-text=\"{data_text}\">"
         f"<td>{html.escape(_fmt_fecha_corta(partido))}</td>"
-        f"<td>{html.escape(_nombre_partido(partido))}</td>"
+        f"<td><span class=\"calendar-match\">{_render_flag_pair(partido, 'calendar-flags')}"
+        f"<span>{html.escape(_nombre_partido(partido))}</span></span></td>"
         f"<td>{html.escape(partido.get('grupo') or partido.get('fase') or '-')}</td>"
         f"<td><span class=\"badge badge-{estado_key}\">{html.escape(estado_label)}</span></td>"
         "</tr>"
@@ -355,7 +440,7 @@ def _css() -> str:
       border-radius: 8px;
       overflow: hidden;
       box-shadow: var(--shadow);
-      min-height: 360px;
+      min-height: 386px;
       display: flex;
       flex-direction: column;
     }
@@ -377,7 +462,39 @@ def _css() -> str:
       border-radius: 8px;
       font-weight: 700;
     }
-    .vs { font-size: 44px; font-weight: 800; letter-spacing: 0; }
+    .flags {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 18px;
+    }
+    .team-flag {
+      min-width: 72px;
+      min-height: 78px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .flag-emoji {
+      font-size: 48px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,.18));
+    }
+    .flag-code {
+      min-width: 34px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: rgba(0,0,0,.36);
+      color: white;
+      font-size: 12px;
+      font-weight: 850;
+      text-align: center;
+    }
+    .vs { font-size: 28px; font-weight: 850; letter-spacing: 0; }
     .card-body {
       padding: 14px;
       display: flex;
@@ -392,8 +509,18 @@ def _css() -> str:
       color: var(--muted);
       font-size: 13px;
     }
-    h3 { margin: 0; font-size: 20px; line-height: 1.22; }
-    .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    h3 {
+      margin: 0;
+      min-height: 50px;
+      font-size: 20px;
+      line-height: 1.22;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 28px;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -408,19 +535,26 @@ def _css() -> str:
     .badge-disponible, .badge-mejorable { background: #e8f5ee; color: var(--ok); }
     .badge-eliminado { background: #fff1e8; color: var(--bad); }
     .badge-pendiente { background: #eef0f3; color: var(--pending); }
-    .detail { color: var(--muted); margin: 0; min-height: 40px; }
+    .detail { color: var(--muted); margin: 0; min-height: 42px; }
+    .card-action {
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: flex-start;
+      margin-top: auto;
+    }
     .play-button {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      min-height: 48px;
+      min-height: 46px;
       border-radius: 8px;
       background: var(--accent);
       color: white;
       text-decoration: none;
       font-weight: 800;
-      margin-top: auto;
     }
     .play-button:hover { background: var(--accent-dark); }
     .empty-action {
@@ -428,12 +562,11 @@ def _css() -> str:
       align-items: center;
       justify-content: center;
       width: 100%;
-      min-height: 48px;
+      min-height: 46px;
       border-radius: 8px;
       background: #eceef2;
       color: var(--pending);
       font-weight: 800;
-      margin-top: auto;
     }
     .empty-action.deleted { background: #fff1e8; color: var(--bad); }
     .file-name {
@@ -441,6 +574,11 @@ def _css() -> str:
       color: var(--muted);
       font-size: 13px;
       overflow-wrap: anywhere;
+      min-height: 34px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .calendar {
       margin-top: 28px;
@@ -458,6 +596,33 @@ def _css() -> str:
     th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 10px 8px; }
     th { color: var(--muted); font-size: 13px; }
     tr:last-child td { border-bottom: 0; }
+    .calendar-match {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .calendar-flags {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex: 0 0 auto;
+    }
+    .calendar-flags .team-flag {
+      min-width: 0;
+      min-height: 0;
+      display: inline-flex;
+      flex-direction: row;
+    }
+    .calendar-flags .flag-emoji {
+      font-size: 22px;
+      filter: none;
+    }
+    .calendar-flags .flag-code { display: none; }
+    .calendar-flags .vs {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
     .hidden { display: none !important; }
     @media (max-width: 760px) {
       .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -475,7 +640,7 @@ def _js() -> str:
     const cards = Array.from(document.querySelectorAll('.match-card'));
     const rows = Array.from(document.querySelectorAll('.calendar-row'));
     const counter = document.querySelector('[data-counter]');
-    let activeFilter = 'todos';
+    let activeFilter = 'disponibles';
 
     function normalizeText(value) {
       return (value || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
@@ -570,8 +735,8 @@ def generar_indice(calendario: list[dict]) -> None:
         "<section class=\"toolbar\" aria-label=\"Filtros\">",
         "<input class=\"search\" data-search type=\"search\" placeholder=\"Buscar equipo, grupo o numero de partido\">",
         "<div class=\"filters\">",
-        "<button class=\"filter active\" data-filter=\"todos\">Todos</button>",
-        "<button class=\"filter\" data-filter=\"disponibles\">Disponibles</button>",
+        "<button class=\"filter\" data-filter=\"todos\">Todos</button>",
+        "<button class=\"filter active\" data-filter=\"disponibles\">Disponibles</button>",
         "<button class=\"filter\" data-filter=\"mejorable\">Mejorables</button>",
         "<button class=\"filter\" data-filter=\"pendiente\">Aun no disponibles</button>",
         "<button class=\"filter\" data-filter=\"eliminado\">Videos eliminados</button>",
