@@ -50,11 +50,27 @@ STATE_FIELDS = (
     "fps",
     "bitrate_kbps",
     "codec_video",
+    "codec_audio",
+    "codecs_audio",
+    "canales_audio",
+    "layout_audio",
     "ffprobe",
     "pistas_audio",
     "idioma_detectado_archivo",
     "verificado_en",
     "postproceso",
+    "compatibilidad_web",
+    "audio_compatible_web",
+    "archivo_web",
+    "archivo_web_ultimo",
+    "archivo_web_existe",
+    "postprocesado_web_en",
+    "archivo_origen_postproceso",
+    "archivo_origen_eliminado",
+    "archivo_origen_eliminado_en",
+    "archivo_origen_eliminado_error",
+    "torrent_retirado_postproceso",
+    "torrent_retirado_postproceso_en",
     "renombrado_en",
     "archivo_nombre_anterior",
     "archivo_relativo_torrent",
@@ -255,6 +271,12 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
         postproceso = partido.get("postproceso") or {}
         if postproceso.get("estado") and not partido.get("validacion_error"):
             datos_archivo.append(f"post: {postproceso['estado']} ({postproceso.get('motivo', '-')})")
+        compatibilidad_web = partido.get("compatibilidad_web") or {}
+        if compatibilidad_web.get("estado"):
+            datos_archivo.append(
+                f"web: {compatibilidad_web['estado']} "
+                f"({compatibilidad_web.get('motivo', '-')})"
+            )
         extra = f" | {' / '.join(datos_archivo)}" if datos_archivo else ""
         fecha = partido.get("fecha_hora_utc", "-")
         grupo = partido.get("grupo", partido.get("fase", "-"))
