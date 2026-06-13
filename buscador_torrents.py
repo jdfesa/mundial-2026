@@ -191,7 +191,27 @@ def generar_queries(equipo1: str, equipo2: str) -> list[str]:
     queries.append(f"{en1} {en2} 2026")
     queries.append(f"{en2} {en1} 2026")
 
-    return queries
+    if getattr(config, "GROQ_HABILITADO", False) and getattr(config, "GROQ_GENERAR_QUERIES", True):
+        try:
+            from groq_asistente import generar_queries as generar_queries_groq
+
+            extras = list(generar_queries_groq(equipo1, equipo2))
+            if extras:
+                logger.info(f"  [Groq] {len(extras)} queries extra")
+                queries.extend(extras)
+        except Exception as e:
+            logger.debug(f"[Groq] No se pudieron generar queries extra: {e}")
+
+    deduplicadas = []
+    vistas = set()
+    for query in queries:
+        clave = query.lower()
+        if clave in vistas:
+            continue
+        vistas.add(clave)
+        deduplicadas.append(query)
+
+    return deduplicadas
 
 
 # ─── Fuente: 1337x ──────────────────────────────────────────────────────────
@@ -242,10 +262,12 @@ def buscar_1337x(equipo1: str, equipo2: str) -> list[dict]:
                     continue
 
                 puntuacion = calcular_puntuacion(titulo, seeders, tamano_gb)
+                hash_match = re.search(r'btih:([a-fA-F0-9]+)', magnet)
 
                 resultados.append({
                     "titulo": titulo,
                     "magnet": magnet,
+                    "torrent_hash": hash_match.group(1).lower() if hash_match else None,
                     "seeders": seeders,
                     "tamano_gb": tamano_gb,
                     "fuente": "1337x",
@@ -330,6 +352,7 @@ def buscar_piratebay(equipo1: str, equipo2: str) -> list[dict]:
                     resultados.append({
                         "titulo": titulo,
                         "magnet": magnet,
+                        "torrent_hash": info_hash.lower(),
                         "seeders": seeders,
                         "tamano_gb": round(tamano_gb, 2),
                         "fuente": "piratebay",
@@ -460,6 +483,18 @@ def buscar_partido(equipo1: str, equipo2: str) -> list[dict]:
                 unicos.append(r)
         else:
             unicos.append(r)
+
+    if unicos and getattr(config, "GROQ_HABILITADO", False):
+        try:
+            from groq_asistente import clasificar_resultados
+
+            clasificar_resultados(equipo1, equipo2, unicos)
+            for resultado in unicos:
+                groq_idioma = resultado.get("groq_idioma")
+                if groq_idioma in {"es", "en", "desconocido"}:
+                    resultado.setdefault("idioma", groq_idioma)
+        except Exception as e:
+            logger.debug(f"[Groq] No se pudieron clasificar resultados: {e}")
 
     # Ordenar por puntuación (mejor primero)
     unicos.sort(key=lambda x: x.get("puntuacion", 0), reverse=True)

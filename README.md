@@ -69,7 +69,11 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 3. Busca en los indexadores configurados en `fuentes_torrent.json`. Si no encuentra
    nada, intenta con `yt-dlp` como fallback.
 
-4. El mejor resultado se elige por puntuación:
+4. Si `GROQ_HABILITADO=1`, Groq puede sumar queries de búsqueda y ajustar la puntuación
+   de resultados ya encontrados. No agrega URLs por su cuenta ni salta las fuentes
+   configuradas.
+
+5. El mejor resultado se elige por puntuación:
    - Idioma español: **+100 puntos**
    - Partido completo: +50
    - Calidad 720p: +30
@@ -135,6 +139,11 @@ No se recomprime por defecto. El postproceso queda como evaluación registrada e
 si el archivo pesa hasta 5 GB y está en 720p o menos, se marca `mantener_origen`; si supera
 5 GB o viene por encima de 720p, queda `revisar` para decidir manualmente si vale la pena
 remuxear o recomprimir.
+
+Cuando una descarga se encola, el estado guarda `descarga_iniciada_en`,
+`revisar_descarga_despues_de` y `torrent_hash` si está disponible. La revisión de una hora
+es una referencia: cada corrida consulta qBittorrent y solo mueve/renombra/verifica cuando
+el progreso real está completo.
 
 Si qBittorrent está corriendo y la Web API responde, también sincroniza torrents completos:
 
@@ -231,6 +240,9 @@ QBIT_HOST=127.0.0.1
 QBIT_PORT=8080
 QBIT_USER=admin
 QBIT_PASS=adminadmin
+GROQ_API_KEY=tu_api_key_local
+GROQ_HABILITADO=1
+GROQ_MODEL=openai/gpt-oss-20b
 ```
 
 ### `fuentes_torrent.json`
