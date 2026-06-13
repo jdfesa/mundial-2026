@@ -25,9 +25,9 @@
       "eng Stereo"
     ],
     "idioma_detectado_archivo": "en",
-    "verificado_en": "2026-06-12T14:08:10.277548+00:00",
-    "intentos_mejora": 1,
-    "ultimo_intento_mejora": "2026-06-12T14:08:03.512431+00:00"
+    "verificado_en": "2026-06-13T02:19:28.434104+00:00",
+    "intentos_mejora": 2,
+    "ultimo_intento_mejora": "2026-06-13T02:19:05.527205+00:00"
   },
   {
     "id": 2,
@@ -55,9 +55,9 @@
       "eng Stereo"
     ],
     "idioma_detectado_archivo": "en",
-    "verificado_en": "2026-06-12T14:08:10.340070+00:00",
-    "intentos_mejora": 1,
-    "ultimo_intento_mejora": "2026-06-12T14:08:10.007861+00:00"
+    "verificado_en": "2026-06-13T02:19:28.497221+00:00",
+    "intentos_mejora": 2,
+    "ultimo_intento_mejora": "2026-06-13T02:19:16.429136+00:00"
   },
   {
     "id": 3,
@@ -68,9 +68,15 @@
     "fecha_hora_utc": "2026-06-12T19:00:00Z",
     "sede": "Toronto",
     "prioridad": "normal",
-    "idioma": null,
+    "idioma": "en",
     "estado_final": false,
-    "necesita_mejora": false
+    "necesita_mejora": true,
+    "descargado": true,
+    "archivo": "FIFA World Cup 2026 Group B Canada Vs Bosnia and Herzegovina 720p HDTV H264",
+    "proveedor": "piratebay",
+    "ruta": "/Users/jd/Development/mundial/Mundial_Partidos/Fase_de_Grupos/Grupo_B",
+    "archivo_existe": false,
+    "verificado_en": "2026-06-13T02:19:28.562499+00:00"
   },
   {
     "id": 4,
