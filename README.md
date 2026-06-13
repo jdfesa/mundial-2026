@@ -72,7 +72,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 4. El mejor resultado se elige por puntuación:
    - Idioma español: **+100 puntos**
    - Partido completo: +50
-   - Calidad 1080p: +30
+   - Calidad 720p: +30
    - Seeders (logarítmico): hasta +40
    - Tamaño ideal (1.5-5 GB): +15
    - Keywords del mundial: +10
@@ -95,16 +95,46 @@ reintentan cada `MINUTOS_ENTRE_REINTENTOS_MEJORA`.
 
 ## Verificación, índice y reporte
 
+El histórico operativo vive en `estado_descargas.json`. Ese archivo es la verdad que usa
+el script para saber qué partidos ya fueron descargados, cuáles son finales y cuáles siguen
+siendo mejorables. La biblioteca local solo se usa como verificación complementaria: si
+movés o borrás un archivo de esta computadora después de pasarlo a otra PC, el partido no
+vuelve a pendiente.
+
 En cada `--status` y al final de una ejecución real, el script revisa la biblioteca local:
 
 - busca archivos de video en `DIRECTORIO_BASE`;
 - también revisa la ruta guardada del partido si existe;
 - opcionalmente revisa rutas extra configuradas en `MUNDIAL_DIRECTORIOS_EXTRA`;
-- si encuentra un video, guarda `archivo_local`, `archivo_existe`, `tamano_mb`,
-  `duracion_min`, `resolucion` e `idioma_detectado_archivo`.
+- si encuentra un video, guarda `archivo_local`, `archivo_local_ultimo`,
+  `archivo_existe`, `archivo_local_estado`, `tamano_mb`, `duracion_min`, `resolucion`,
+  `codec_video`, `fps`, `bitrate_kbps` e `idioma_detectado_archivo`;
+- si ya no encuentra el video, conserva `archivo_local_ultimo` y marca
+  `archivo_local_estado=movido_o_borrado`, sin cambiar `descargado`,
+  `estado_final` ni `necesita_mejora`.
 
 Para leer duración, resolución e idioma de pistas de audio usa `ffprobe` si está instalado.
 Si no está, igual detecta existencia y tamaño.
+
+### Nombres y postproceso
+
+Los archivos completos se renombran a un formato estable cuando el script puede hacerlo de
+forma segura:
+
+```text
+001_mexico_vs_sudafrica_en.mkv
+002_corea_del_sur_vs_rep_checa_es.mp4
+```
+
+El prefijo numérico evita colisiones, los equipos salen del calendario en español y el
+sufijo indica idioma/estado: `_es` es final, `_en` queda como mejorable. Si qBittorrent
+está administrando el archivo, el renombrado se intenta por la Web API de qBittorrent. Para
+fuentes manuales o `yt-dlp`, el renombrado puede hacerse directamente sobre el archivo.
+
+No se recomprime por defecto. El postproceso queda como evaluación registrada en estado:
+si el archivo pesa hasta 5 GB y está en 720p o menos, se marca `mantener_origen`; si supera
+5 GB o viene por encima de 720p, queda `revisar` para decidir manualmente si vale la pena
+remuxear o recomprimir.
 
 Si qBittorrent está corriendo y la Web API responde, también sincroniza torrents completos:
 
@@ -119,6 +149,7 @@ Esto se controla con:
 ```env
 QBIT_MOVER_COMPLETADOS=1
 QBIT_BUSCAR_TODAS_LAS_DESCARGAS=1
+MUNDIAL_RENOMBRAR_ARCHIVOS=1
 ```
 
 En una ejecución normal el script puede abrir qBittorrent si no está corriendo. En `--status`
