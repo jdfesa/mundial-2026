@@ -413,6 +413,36 @@ def mover_torrent(torrent_hash: str, carpeta_destino: str) -> bool:
         return False
 
 
+def eliminar_torrent(torrent_hash: str, borrar_archivos: bool = False) -> bool:
+    """
+    Retira un torrent de qBittorrent.
+
+    Por defecto no le pide a qBittorrent borrar archivos. Esto permite sacar el
+    torrent del cliente antes de eliminar manualmente solo el MKV original tras
+    generar la copia MP4 compatible.
+    """
+    if not torrent_hash:
+        return False
+
+    cliente = obtener_cliente(abrir_si_no_corre=False)
+    if not cliente:
+        return False
+
+    try:
+        resultado = cliente.torrents_delete(
+            delete_files=borrar_archivos,
+            torrent_hashes=[torrent_hash],
+        )
+        if resultado in (None, "Ok."):
+            logger.info(f"Torrent retirado de qBittorrent: {torrent_hash[:12]}")
+            return True
+        logger.warning(f"qBittorrent respondio al retirar torrent: {resultado}")
+        return False
+    except Exception as e:
+        logger.warning(f"No se pudo retirar torrent de qBittorrent {torrent_hash[:12]}: {e}")
+        return False
+
+
 def _candidatos_archivo_torrent(torrent: dict, ruta_relativa: str) -> list[Path]:
     """Devuelve posibles rutas absolutas para un archivo de un torrent."""
     candidatos = []
