@@ -41,6 +41,7 @@ def esta_qbittorrent_corriendo() -> bool:
             if resultado.returncode == 0:
                 return True
             if sistema == "darwin" and resultado.returncode not in (0, 1):
+                logger.debug(f"No se pudo consultar proceso qBittorrent con pgrep: {resultado.stderr.strip()}")
                 break
 
         if sistema == "darwin":
@@ -53,6 +54,33 @@ def esta_qbittorrent_corriendo() -> bool:
         return False
     except Exception:
         return False
+
+
+def _conectar_web_api(log_errores: bool = True):
+    """Intenta conectar con la Web API de qBittorrent."""
+    cliente = qbittorrentapi.Client(
+        host=config.QBIT_HOST,
+        port=config.QBIT_PORT,
+        username=config.QBIT_USER,
+        password=config.QBIT_PASS,
+    )
+
+    try:
+        cliente.auth_log_in()
+        version = str(cliente.app.version).lstrip("v")
+        logger.info(f"Conectado a qBittorrent v{version}")
+        return cliente, None
+    except qbittorrentapi.LoginFailed as e:
+        mensaje = f"Error de autenticación en qBittorrent: {e}"
+        if log_errores:
+            logger.error(mensaje)
+            logger.error("Verificá que la Web UI esté habilitada y las credenciales sean correctas")
+        return None, mensaje
+    except Exception as e:
+        mensaje = f"Error conectando a qBittorrent Web API ({config.QBIT_HOST}:{config.QBIT_PORT}): {e}"
+        if log_errores:
+            logger.error(mensaje)
+        return None, mensaje
 
 
 def abrir_qbittorrent() -> bool:
@@ -98,19 +126,29 @@ def abrir_qbittorrent() -> bool:
 def obtener_cliente(abrir_si_no_corre: bool = True):
     """
     Obtiene un cliente conectado de qBittorrent.
-    Si qBittorrent no está corriendo, intenta abrirlo.
+    Primero prueba la Web API; si no responde y está permitido, intenta abrir la app.
     Retorna el cliente o None si falla.
     """
     if not QBIT_DISPONIBLE:
         logger.error("qbittorrent-api no está instalado")
         return None
 
-    # Verificar si está corriendo, si no, intentar abrirlo
-    if not esta_qbittorrent_corriendo():
-        if not abrir_si_no_corre:
-            logger.info("qBittorrent no está corriendo; se omite consulta de estado")
-            return None
+    cliente, error = _conectar_web_api(log_errores=False)
+    if cliente:
+        return cliente
 
+    corriendo = esta_qbittorrent_corriendo()
+    if not abrir_si_no_corre:
+        logger.info(
+            f"qBittorrent Web API no responde en {config.QBIT_HOST}:{config.QBIT_PORT}; "
+            "se omite consulta de estado"
+        )
+        if corriendo:
+            logger.debug("La app de qBittorrent parece estar abierta, pero la Web API no respondió")
+        logger.debug(error)
+        return None
+
+    if not corriendo:
         from notificador import notificar_qbittorrent_necesario
         notificar_qbittorrent_necesario()
 
@@ -121,25 +159,8 @@ def obtener_cliente(abrir_si_no_corre: bool = True):
         # Esperar un poco más para que la Web UI esté lista
         time.sleep(3)
 
-    # Intentar conectar
-    cliente = qbittorrentapi.Client(
-        host=config.QBIT_HOST,
-        port=config.QBIT_PORT,
-        username=config.QBIT_USER,
-        password=config.QBIT_PASS,
-    )
-
-    try:
-        cliente.auth_log_in()
-        logger.info(f"Conectado a qBittorrent v{cliente.app.version}")
-        return cliente
-    except qbittorrentapi.LoginFailed as e:
-        logger.error(f"Error de autenticación en qBittorrent: {e}")
-        logger.error("Verificá que la Web UI esté habilitada y las credenciales sean correctas")
-        return None
-    except Exception as e:
-        logger.error(f"Error conectando a qBittorrent: {e}")
-        return None
+    cliente, _ = _conectar_web_api(log_errores=True)
+    return cliente
 
 
 def enviar_magnet(magnet_link: str, carpeta_destino: str, nombre_partido: str) -> bool:
