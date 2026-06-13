@@ -62,6 +62,14 @@ def _score_candidato(partido: dict, path: Path) -> int:
     texto = _normalizar_match(str(path))
     score = 0
 
+    archivo_web = partido.get("archivo_web") or partido.get("archivo_web_ultimo")
+    if archivo_web and Path(str(archivo_web)).name == path.name:
+        score += 160
+
+    nombre_canonico = partido.get("nombre_canonico")
+    if nombre_canonico and path.name == nombre_canonico:
+        score += 120
+
     archivo = _normalizar_match(partido.get("archivo"))
     if archivo and archivo in texto:
         score += 100
@@ -76,6 +84,9 @@ def _score_candidato(partido: dict, path: Path) -> int:
     partido_id = partido.get("id")
     if partido_id is not None and re.search(rf"\b0*{partido_id}\b", texto):
         score += 5
+
+    if path.suffix.lower() == ".mp4":
+        score += 12
 
     return score
 
@@ -144,6 +155,15 @@ def _extraer_metadata_ffprobe(datos: dict) -> dict:
             if fps:
                 meta["fps"] = fps
         if stream.get("codec_type") == "audio":
+            codec = stream.get("codec_name")
+            if codec:
+                meta.setdefault("codecs_audio", []).append(codec)
+            if codec and "codec_audio" not in meta:
+                meta["codec_audio"] = codec
+            if stream.get("channels") and "canales_audio" not in meta:
+                meta["canales_audio"] = stream.get("channels")
+            if stream.get("channel_layout") and "layout_audio" not in meta:
+                meta["layout_audio"] = stream.get("channel_layout")
             tags = stream.get("tags", {})
             idioma = tags.get("language")
             title = tags.get("title")
