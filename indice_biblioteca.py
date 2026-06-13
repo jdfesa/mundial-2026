@@ -128,9 +128,10 @@ def _directorio_partido(partido: dict) -> str:
 
 
 def _archivo_existe_local(partido: dict) -> str | None:
-    path = partido.get("archivo_local")
-    if path and os.path.exists(path):
-        return path
+    for campo in ("archivo_web", "archivo_local"):
+        path = partido.get(campo)
+        if path and os.path.exists(path):
+            return path
     return None
 
 
@@ -143,9 +144,10 @@ def _archivo_portable(partido: dict) -> str | None:
     if local:
         return local
 
-    ultimo = partido.get("archivo_local_ultimo")
-    if ultimo:
-        return ultimo
+    for campo in ("archivo_web_ultimo", "archivo_local_ultimo"):
+        ultimo = partido.get(campo)
+        if ultimo:
+            return ultimo
 
     nombre = partido.get("nombre_canonico")
     if nombre and Path(nombre).suffix:
@@ -193,6 +195,7 @@ def _texto_busqueda(partido: dict, archivo: str | None) -> str:
         partido.get("fase", ""),
         etiqueta_idioma(partido.get("idioma")),
         partido.get("nombre_canonico", ""),
+        Path(partido.get("archivo_web", "")).name if partido.get("archivo_web") else "",
         partido.get("archivo", ""),
         Path(archivo).name if archivo else "",
     ]

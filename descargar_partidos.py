@@ -9,6 +9,7 @@ Uso:
     python descargar_partidos.py --dry-run    # Simular sin descargar
     python descargar_partidos.py --status     # Ver estado de descargas
     python descargar_partidos.py --forzar ID  # Forzar descarga de un partido por ID
+    python descargar_partidos.py --postprocesar-web  # Preparar MP4/AAC para HTML
 """
 import json
 import os
@@ -36,6 +37,7 @@ from notificador import (
 )
 from reporte_diario import generar_reporte_diario
 from organizador_descargas import sincronizar_descargas_completadas
+from postprocesador_web import postprocesar_compatibilidad_web
 from verificador_archivos import verificar_archivos
 
 
@@ -90,6 +92,19 @@ def guardar_calendario(datos: list[dict]):
     with open(config.ARCHIVO_CALENDARIO, 'w', encoding='utf-8') as f:
         json.dump(datos, f, indent=2, ensure_ascii=False)
     logger.debug("Calendario guardado")
+
+
+def preparar_compatibilidad_web(calendario: list[dict], dry_run: bool = False) -> dict:
+    """
+    Genera MP4 compatibles con navegador y refresca metadata cuando aplica.
+
+    Se ejecuta despues de sincronizar y verificar archivos locales, porque necesita
+    trabajar sobre el nombre canonico final.
+    """
+    resumen = postprocesar_compatibilidad_web(calendario, dry_run=dry_run)
+    if not dry_run and (resumen.get("convertidos") or resumen.get("compatibles")):
+        verificar_archivos(calendario, renombrar_archivos=False)
+    return resumen
 
 
 # ─── Directorios ─────────────────────────────────────────────────────────────
@@ -511,6 +526,7 @@ def main():
     dry_run = "--dry-run" in sys.argv
     mostrar = "--status" in sys.argv
     solo_manuales = "--solo-manuales" in sys.argv
+    solo_postprocesar_web = "--postprocesar-web" in sys.argv
     forzar_id = None
     marcar_id = None
     marcar_idioma = "en"
@@ -565,6 +581,8 @@ def main():
             marcar_ruta or partido.get("ruta"),
         )
         verificar_archivos(calendario, renombrar_archivos=False)
+        if not dry_run:
+            preparar_compatibilidad_web(calendario)
         guardar_estado(calendario, estado)
         generar_reporte_diario(calendario)
         generar_indice(calendario)
@@ -572,6 +590,24 @@ def main():
             f"Partido {marcar_id} marcado como descargado "
             f"({etiqueta_idioma(marcar_idioma)})"
         )
+        return
+
+    if solo_postprocesar_web:
+        calendario = cargar_calendario()
+        estado = cargar_estado()
+        aplicar_estado(calendario, estado)
+        normalizar_calendario(calendario)
+        if not dry_run:
+            sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
+            verificar_archivos(calendario, renombrar_archivos=True)
+        else:
+            verificar_archivos(calendario, renombrar_archivos=False)
+        preparar_compatibilidad_web(calendario, dry_run=dry_run)
+        if not dry_run:
+            guardar_estado(calendario, estado)
+            generar_reporte_diario(calendario)
+            generar_indice(calendario)
+        logger.info("Postproceso web finalizado")
         return
 
     if mostrar:
@@ -685,6 +721,7 @@ def main():
     if not dry_run:
         sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
         verificar_archivos(calendario, renombrar_archivos=True)
+        preparar_compatibilidad_web(calendario)
         guardar_estado(calendario, estado)
         generar_reporte_diario(calendario)
         generar_indice(calendario)
