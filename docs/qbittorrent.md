@@ -1,7 +1,8 @@
 # qBittorrent
 
 qBittorrent es el punto de integracion principal para encolar descargas, consultar progreso,
-mover torrents completos y renombrar archivos administrados por el cliente.
+mover torrents completos, renombrar archivos administrados por el cliente y limpiar
+auxiliares de spam cuando corresponde.
 
 ## Web API
 
@@ -38,7 +39,12 @@ QBIT_HOST=127.0.0.1
 QBIT_PORT=8080
 QBIT_USER=admin
 QBIT_PASS=adminadmin
+QBIT_LIMPIAR_AUXILIARES=1
 ```
+
+Con `QBIT_LIMPIAR_AUXILIARES=1`, el script marca como no descargables y elimina auxiliares
+pequenos conocidos (`.nfo`, `.txt`, `.url`) despues de mover el video principal a la raiz
+del grupo. No toca subtitulos ni archivos de extension desconocida.
 
 ## Prueba Rapida
 

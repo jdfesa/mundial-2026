@@ -109,8 +109,9 @@ El prefijo numerico evita colisiones, los equipos salen del calendario en espano
 sufijo indica idioma/estado: `_es` es final, `_en` queda como mejorable.
 
 Si qBittorrent esta administrando el archivo, el renombrado se intenta por la Web API de
-qBittorrent. Para fuentes manuales o `yt-dlp`, el renombrado puede hacerse directamente
-sobre el archivo.
+qBittorrent. Cuando el torrent trae una carpeta release con spam, el video principal se
+aplana a la raiz del grupo con el nombre canonico. Para fuentes manuales o `yt-dlp`, el
+renombrado puede hacerse directamente sobre el archivo.
 
 No se recomprime por defecto. El postproceso queda como evaluacion registrada en estado:
 
@@ -131,6 +132,8 @@ Si qBittorrent esta corriendo y la Web API responde, tambien sincroniza torrents
 - los compara contra el calendario/estado por titulo y equipos;
 - si estan en la carpeta por defecto de qBittorrent, le pide a qBittorrent que los mueva al
   destino final por fase/grupo;
+- renombra el video principal al formato canonico en la raiz del grupo;
+- opcionalmente limpia auxiliares pequenos de spam (`.nfo`, `.txt`, `.url`);
 - no mueve archivos con `shutil` mientras qBittorrent los administra.
 
 Esto se controla con:
@@ -139,6 +142,7 @@ Esto se controla con:
 QBIT_MOVER_COMPLETADOS=1
 QBIT_BUSCAR_TODAS_LAS_DESCARGAS=1
 MUNDIAL_RENOMBRAR_ARCHIVOS=1
+QBIT_LIMPIAR_AUXILIARES=1
 ```
 
 ## Reportes Generados
