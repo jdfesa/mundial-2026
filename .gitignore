@@ -16,6 +16,8 @@ reporte_diario.txt
 mundial.log
 launchd_stdout.log
 launchd_stderr.log
+run_stdout.log
+run_stderr.log
 Mundial_Partidos/
 test_output/
 

@@ -6,8 +6,13 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/venv"
-PLIST_NAME="com.mundial.descargador.plist"
-LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+
+if [ "$(uname -s)" != "Darwin" ]; then
+    echo "Este setup automatico esta preparado para macOS/launchd."
+    echo "En Linux instala dependencias con pip y ejecuta: ./run.sh --status"
+    echo "Para automatizar, crea un cron o systemd timer que ejecute: $SCRIPT_DIR/run.sh"
+    exit 1
+fi
 
 echo "🏆 Configurando Descargador de Partidos - Mundial 2026"
 echo "═══════════════════════════════════════════════════════"
@@ -82,20 +87,8 @@ fi
 # 6. Instalar LaunchAgent
 echo ""
 echo "⏰ Instalando tarea programada (launchd)..."
-mkdir -p "$LAUNCH_AGENTS_DIR"
-
-# Descargar plist si no está copiado
-if [ -f "$SCRIPT_DIR/$PLIST_NAME" ]; then
-    # Descargar el agente existente si hay uno corriendo
-    launchctl unload "$LAUNCH_AGENTS_DIR/$PLIST_NAME" 2>/dev/null || true
-    
-    cp "$SCRIPT_DIR/$PLIST_NAME" "$LAUNCH_AGENTS_DIR/$PLIST_NAME"
-    launchctl load "$LAUNCH_AGENTS_DIR/$PLIST_NAME"
-    echo "   ✅ Tarea programada instalada"
-    echo "   ℹ️  El script se ejecutará cada 30 min entre 10:00 y 02:00"
-else
-    echo "   ⚠️  No se encontró $PLIST_NAME"
-fi
+"$SCRIPT_DIR/install_macos_launchd.sh"
+echo "   ✅ Tarea programada instalada"
 
 # 7. Test rápido
 echo ""

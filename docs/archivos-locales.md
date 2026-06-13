@@ -32,6 +32,7 @@ Luego edita:
 | `reporte_diario.txt` | Lo genera `reporte_diario.py` | Cambia con cada ejecucion y cada calendario. |
 | `mundial.log` | Lo genera el script | Contiene logs locales de ejecucion. |
 | `launchd_stdout.log` / `launchd_stderr.log` | Los genera launchd | Son logs locales de macOS. |
+| `run_stdout.log` / `run_stderr.log` | Los puede generar cron/systemd | Son logs locales en Linux si usas automatizacion propia. |
 | `Mundial_Partidos/` | Lo genera el flujo de descarga | Contiene videos y archivos pesados. |
 | `com.mundial.descargador.plist` | Lo genera el instalador macOS | Contiene rutas absolutas de la maquina. |
 

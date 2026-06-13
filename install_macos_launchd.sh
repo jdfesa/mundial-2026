@@ -5,6 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LABEL="com.mundial.descargador"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
+if [ "$(uname -s)" != "Darwin" ]; then
+    echo "Este instalador usa launchd y solo aplica a macOS."
+    echo "En Linux crea un cron o systemd timer que ejecute: $SCRIPT_DIR/run.sh"
+    exit 1
+fi
+
 mkdir -p "$HOME/Library/LaunchAgents"
 
 cat > "$PLIST" <<PLIST
@@ -17,7 +23,7 @@ cat > "$PLIST" <<PLIST
 
     <key>ProgramArguments</key>
     <array>
-        <string>$SCRIPT_DIR/run_macos.sh</string>
+        <string>$SCRIPT_DIR/run.sh</string>
     </array>
 
     <key>WorkingDirectory</key>

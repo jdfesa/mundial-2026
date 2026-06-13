@@ -22,7 +22,9 @@ debería usarse con este script.
 ## Qué es
 
 Scripts en Python para organizar la búsqueda, descarga y archivo automático de los 104
-partidos del Mundial FIFA 2026. Funciona en macOS y Windows.
+partidos del Mundial FIFA 2026. Está probado principalmente en macOS; el núcleo Python es
+portable y puede adaptarse a Linux o Windows revisando los puntos de
+[`docs/plataformas.md`](docs/plataformas.md).
 
 El sistema busca partidos ya finalizados en fuentes torrent configuradas por el usuario,
 los descarga vía qBittorrent y los organiza automáticamente en carpetas por fase y grupo.
@@ -31,7 +33,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  launchd / Task Scheduler (cada 30 min)                             │
+│  launchd / cron / Task Scheduler (cada 30 min)                      │
 │      └── descargar_partidos.py (orquestador)                        │
 │              ├── config.py + .env                                   │
 │              ├── calendario_mundial_2026.json (104 partidos)        │
@@ -227,6 +229,8 @@ cp fuentes_manuales.example.json fuentes_manuales.json
 
 Los archivos locales ignorados por git estan explicados en
 [`docs/archivos-locales.md`](docs/archivos-locales.md).
+El alcance por sistema operativo esta resumido en
+[`docs/plataformas.md`](docs/plataformas.md).
 
 ### Setup automático (macOS)
 
@@ -259,25 +263,28 @@ suben, lee [`docs/archivos-locales.md`](docs/archivos-locales.md).
 
 ## Uso
 
-### macOS
+### macOS / Linux manual
 
 Uso recomendado con menu interactivo:
 
 ```bash
-./menu_macos.sh
+./menu.sh
 ```
 
 El menu permite ver estado, ejecutar, simular, forzar un partido, marcar descargas,
-probar qBittorrent y reinstalar la tarea automatica.
+probar qBittorrent y, en macOS, reinstalar la tarea automatica con launchd.
 
 ```bash
-./run_macos.sh                   # Ejecutar
-./run_macos.sh --dry-run         # Simular sin descargar
-./run_macos.sh --status          # Ver estado de descargas
-./run_macos.sh --forzar 3        # Forzar descarga del partido #3
-./run_macos.sh --solo-manuales   # Solo fuentes manuales
-./run_macos.sh --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
+./run.sh                   # Ejecutar
+./run.sh --dry-run         # Simular sin descargar
+./run.sh --status          # Ver estado de descargas
+./run.sh --forzar 3        # Forzar descarga del partido #3
+./run.sh --solo-manuales   # Solo fuentes manuales
+./run.sh --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
 ```
+
+En Linux no hay instalador incluido; si queres automatizar, agregá un cron o systemd timer
+que ejecute `./run.sh`. Detalles: [`docs/plataformas.md`](docs/plataformas.md).
 
 ### Windows
 
@@ -345,9 +352,10 @@ con `--idioma es`, queda como `FINAL`.
 | `fuentes_torrent.example.json` | ✅ | Template para indexadores |
 | `fuentes_manuales.example.json` | ✅ | Template para fuentes manuales |
 | `docs/archivos-locales.md` | ✅ | Guía de archivos ignorados, generados y locales |
+| `docs/plataformas.md` | ✅ | Estado de soporte por sistema operativo |
 | `setup.sh` | ✅ | Setup automático macOS |
-| `menu_macos.sh` | ✅ | Menú interactivo para macOS |
-| `run_macos.sh` | ✅ | Ejecutor portable macOS |
+| `menu.sh` | ✅ | Menú interactivo Unix (macOS/Linux manual) |
+| `run.sh` | ✅ | Ejecutor portable Unix (macOS/Linux) |
 | `run_windows.bat` | ✅ | Ejecutor portable Windows |
 | `install_macos_launchd.sh` | ✅ | Instala tarea launchd |
 | `install_windows_task.bat` | ✅ | Instala tarea programada Windows |

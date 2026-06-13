@@ -2,8 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-RUNNER="$SCRIPT_DIR/run_macos.sh"
+RUNNER="$SCRIPT_DIR/run.sh"
 PYTHON_BIN="$SCRIPT_DIR/venv/bin/python"
+SISTEMA="$(uname -s)"
 
 if [ ! -x "$PYTHON_BIN" ]; then
   PYTHON_BIN="$(command -v python3)"
@@ -19,7 +20,7 @@ pausa() {
 titulo() {
   printf "\n"
   printf "============================================================\n"
-  printf " Mundial 2026 - Menu macOS\n"
+  printf " Mundial 2026 - Menu (%s)\n" "$SISTEMA"
   printf "============================================================\n"
 }
 
@@ -78,7 +79,15 @@ forzar_partido() {
   "$RUNNER" --forzar "$id"
 }
 
-instalar_launchd() {
+instalar_automatizacion() {
+  if [ "$SISTEMA" != "Darwin" ]; then
+    printf "La instalacion automatica incluida es solo para macOS/launchd.\n"
+    printf "En Linux conviene crear un cron o systemd timer que ejecute:\n"
+    printf "  %s\n" "$RUNNER"
+    printf "En Windows usar install_windows_task.bat desde PowerShell/CMD.\n"
+    return
+  fi
+
   printf "Esto instalara/actualizara la tarea automatica cada 30 min. Continuar? [s/N]: "
   read -r respuesta
   case "$respuesta" in
@@ -102,7 +111,7 @@ while true; do
   printf "  5) Forzar partido por ID\n"
   printf "  6) Marcar partido como descargado\n"
   printf "  7) Probar qBittorrent Web UI/API\n"
-  printf "  8) Instalar/actualizar tarea automatica macOS\n"
+  printf "  8) Automatizacion del sistema\n"
   printf "  9) Mostrar reporte diario\n"
   printf "  0) Salir\n"
   printf "\nElegir opcion: "
@@ -138,7 +147,7 @@ while true; do
       pausa
       ;;
     8)
-      instalar_launchd
+      instalar_automatizacion
       pausa
       ;;
     9)
