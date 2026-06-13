@@ -36,9 +36,10 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 │              ├── Lee calendario_mundial_2026.json (104 matches) │
 │              ├── ¿Partido terminó hace +3 horas? ──► buscar    │
 │              ├── buscador_torrents.py                           │
-│              │       ├── fuentes_torrent.json (mirrors)        │
-│              │       ├── fuentes_manuales.json (URLs propias)  │
-│              │       └── yt-dlp (fallback)                     │
+│              │       ├── busqueda_reglas.py                    │
+│              │       ├── fuentes_torrent.py + fuentes_*.json   │
+│              │       ├── fallback_ytdlp.py                     │
+│              │       └── groq_asistente.py (opcional)          │
 │              ├── qbit_manager.py ──► qBittorrent               │
 │              ├── organizador_descargas.py                      │
 │              ├── verificador_archivos.py                       │
@@ -368,12 +369,17 @@ con `--idioma es`, queda como `FINAL`.
 | Archivo | En el repo | Descripción |
 |---------|:----------:|-------------|
 | `descargar_partidos.py` | ✅ | Script principal, coordinador |
-| `buscador_torrents.py` | ✅ | Motor de búsqueda multi-fuente |
+| `buscador_torrents.py` | ✅ | Fachada del buscador y ranking final |
+| `busqueda_reglas.py` | ✅ | Queries, scoring y validaciones compartidas |
+| `fuentes_torrent.py` | ✅ | Scrapers/APIs de indexadores torrent |
+| `fallback_ytdlp.py` | ✅ | Fallback tardío y validado con yt-dlp |
+| `groq_asistente.py` | ✅ | Asistente opcional para queries y clasificación |
 | `qbit_manager.py` | ✅ | Integración con qBittorrent (macOS/Windows/Linux) |
 | `notificador.py` | ✅ | Notificaciones del sistema |
 | `config.py` | ✅ | Configuración centralizada (lee de `.env`) |
 | `estado_descargas.py` | ✅ | Estado persistente separado del calendario |
 | `idioma_utils.py` | ✅ | Detección y clasificación de idioma |
+| `nombres_archivos.py` | ✅ | Nombres canónicos de archivos descargados |
 | `fuentes_manuales.py` | ✅ | Lógica para fuentes declaradas por el usuario |
 | `organizador_descargas.py` | ✅ | Mueve torrents completos a la carpeta final |
 | `verificador_archivos.py` | ✅ | Verifica archivos locales y metadata con ffprobe |
@@ -403,6 +409,9 @@ con `--idioma es`, queda como `FINAL`.
 La descarga vía qBittorrent intenta primero la Web API (`host:puerto`). Si la Web API
 no responde, se usa un fallback que abre el magnet link directamente con la aplicación
 asociada del sistema (`open` en macOS, `cmd /c start` en Windows, `xdg-open` en Linux).
+En `--status` el script no abre aplicaciones por su cuenta: solo consulta la Web API. Si
+qBittorrent está abierto pero la Web UI está deshabilitada o en otro puerto, el estado lo
+va a informar como Web API no disponible, no como descarga fallida.
 
 Para usar la Web API:
 
