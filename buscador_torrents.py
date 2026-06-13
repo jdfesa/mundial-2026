@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote_plus
 
 import config
+from nombres_archivos import nombre_base_canonico_partido
 
 logger = logging.getLogger("mundial")
 
@@ -77,13 +78,14 @@ def calcular_puntuacion(titulo: str, seeders: int, tamano_gb: float) -> float:
             puntuacion += 50
             break
 
-    # Bonus por calidad
-    if "1080p" in titulo_lower or "full hd" in titulo_lower:
+    # Bonus por calidad. La preferencia operativa es 720p: suficiente calidad,
+    # archivos razonables y menos CPU/espacio para administrar.
+    if "720p" in titulo_lower or "hdtv" in titulo_lower:
         puntuacion += 30
-    elif "720p" in titulo_lower or "hd" in titulo_lower:
-        puntuacion += 20
+    elif "1080p" in titulo_lower or "full hd" in titulo_lower:
+        puntuacion += 8
     elif "4k" in titulo_lower or "2160p" in titulo_lower:
-        puntuacion += 10  # 4K es demasiado pesado para el i3
+        puntuacion -= 25
 
     # Bonus por seeders (logarítmico para no sobrevalorar)
     if seeders > 0:
@@ -95,8 +97,10 @@ def calcular_puntuacion(titulo: str, seeders: int, tamano_gb: float) -> float:
         puntuacion -= 50  # Probablemente no es un partido completo
     elif tamano_gb > config.TAMANO_MAX_GB:
         puntuacion -= 20  # Muy grande, posiblemente 4K
-    elif 1.5 <= tamano_gb <= 5.0:
+    elif 1.5 <= tamano_gb <= getattr(config, "TAMANO_IDEAL_MAX_GB", 5.0):
         puntuacion += 15  # Tamaño ideal para HD
+    elif tamano_gb > getattr(config, "TAMANO_IDEAL_MAX_GB", 5.0):
+        puntuacion -= 8
 
     # Bonus por keywords de mundial
     mundial_keywords = ["world cup", "mundial", "copa del mundo", "fifa", "wc2026", "wc 2026"]
@@ -374,7 +378,10 @@ def buscar_ytdlp(equipo1: str, equipo2: str, directorio_destino: str) -> dict | 
         f'ytsearch3:"{equipo1} {equipo2} FIFA World Cup 2026 full match"',
     ]
 
-    nombre_archivo = f"{equipo1}_vs_{equipo2}"
+    nombre_archivo = nombre_base_canonico_partido({
+        "equipo1": equipo1,
+        "equipo2": equipo2,
+    })
 
     for query in queries_yt:
         try:

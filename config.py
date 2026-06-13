@@ -79,7 +79,14 @@ MINUTOS_ENTRE_REINTENTOS_MEJORA = 180
 # ─── Filtros de Búsqueda ─────────────────────────────────────────────────────
 MIN_SEEDERS = 1  # Bajo para torrents recién subidos del mundial
 TAMANO_MIN_GB = 0.5   # Mínimo 500MB (podría ser 720p comprimido)
-TAMANO_MAX_GB = 10.0   # Máximo 10GB
+TAMANO_MAX_GB = 10.0   # Máximo absoluto antes de penalizar fuerte
+TAMANO_IDEAL_MAX_GB = 5.0
+POSTPROCESO_UMBRAL_GB = 5.0
+ALTURA_PREFERIDA = 720
+RENOMBRAR_ARCHIVOS_CANONICOS = (
+    os.getenv("MUNDIAL_RENOMBRAR_ARCHIVOS", "1") not in {"0", "false", "False"}
+)
+RENOMBRAR_PROVEEDORES_FILESYSTEM = {"manual", "manual_estado", "yt-dlp"}
 IDIOMA_PREFERIDO = "español"
 IDIOMAS_FINALES = ["es"]
 # Si un resultado no declara idioma, se asume ingles porque suele ser el caso en
@@ -164,6 +171,10 @@ def indexador_habilitado(nombre: str) -> bool:
 
 # ─── yt-dlp (fallback) ──────────────────────────────────────────────────────
 YTDLP_DURACION_MINIMA = 5400  # 90 minutos en segundos
-YTDLP_FORMATO = "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+YTDLP_FORMATO = (
+    f"bestvideo[height<={ALTURA_PREFERIDA}][ext=mp4]+bestaudio[ext=m4a]/"
+    f"best[height<={ALTURA_PREFERIDA}][ext=mp4]/"
+    f"best[height<={ALTURA_PREFERIDA}]/best"
+)
 YTDLP_TIMEOUT_SEGUNDOS = 7200
 YTDLP_EXTRA_ARGS = []
