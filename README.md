@@ -64,139 +64,17 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-### Lógica de búsqueda
+## Lectura rápida
 
-1. El script revisa el calendario y solo procesa partidos que:
-   - ya hayan empezado hace al menos 3 horas;
-   - no estén descargados en idioma final;
-   - no hayan superado el máximo de intentos normales (15);
-   - respeten el tiempo entre reintentos (30 min).
+- Busca partidos que ya empezaron hace al menos 3 horas.
+- Prioriza español, partido completo, 720p y tamaños razonables.
+- Mantiene historial en `estado_descargas.json`, independiente de archivos locales.
+- Si una descarga está en inglés queda `MEJORABLE`; si está en español queda `FINAL`.
+- No recomprime por defecto: registra si conviene mantener o revisar manualmente.
+- `yt-dlp` existe solo como fallback tardío y validado.
 
-2. Para cada partido genera ~15 queries de búsqueda (en inglés y español, en ambos
-   órdenes: "Mexico vs South Africa" y "South Africa vs Mexico").
-
-3. Busca en los indexadores configurados en `fuentes_torrent.json`. Si no encuentra
-   nada, `yt-dlp` queda reservado como fallback tardío y validado.
-
-4. Si `GROQ_HABILITADO=1`, Groq puede sumar queries de búsqueda y ajustar la puntuación
-   de resultados ya encontrados. No agrega URLs por su cuenta ni salta las fuentes
-   configuradas.
-
-5. El mejor resultado se elige por puntuación:
-   - Idioma español: **+100 puntos**
-   - Partido completo: +50
-   - Calidad 720p: +30
-   - Seeders (logarítmico): hasta +40
-   - Tamaño ideal (1.5-5 GB): +15
-    - Keywords del mundial: +10
-
-El fallback `yt-dlp` espera bastante más que los torrents antes de activarse
-(`YTDLP_HORAS_ESPERA_POST_PARTIDO`, por defecto 24 horas desde el inicio del partido).
-Antes de descargar, revisa metadata: ambos equipos deben aparecer en el título, debe haber
-señal de partido completo/replay, no puede contener palabras de comentario/reacción, debe
-durar entre 90 y 180 minutos y tener al menos 720p. Si un archivo descargado por `yt-dlp`
-no pasa esa validación local, queda como `rechazado` y el partido vuelve a pendiente.
-
-### Lógica de idioma
-
-| Idioma detectado | Estado      | ¿Sigue buscando?                        |
-|------------------|-------------|------------------------------------------|
-| Español          | `FINAL`     | No. Ya tiene la versión preferida.       |
-| Inglés           | `MEJORABLE` | Sí, pero solo si encuentra una en español. |
-| Desconocido      | `MEJORABLE` | Sí, igual que inglés.                    |
-
-Si un partido ya está en inglés y una búsqueda posterior encuentra otro resultado en
-inglés, no se vuelve a descargar. Si encuentra una versión en español, se descarga y
-el partido pasa a estado final.
-
-Las búsquedas de mejora para partidos ya descargados en inglés no consumen los intentos
-normales. Se registran aparte como `intentos_mejora` y `ultimo_intento_mejora`, y se
-reintentan cada `MINUTOS_ENTRE_REINTENTOS_MEJORA`.
-
-## Verificación, índice y reporte
-
-El histórico operativo vive en `estado_descargas.json`. Ese archivo es la verdad que usa
-el script para saber qué partidos ya fueron descargados, cuáles son finales y cuáles siguen
-siendo mejorables. La biblioteca local solo se usa como verificación complementaria: si
-movés o borrás un archivo de esta computadora después de pasarlo a otra PC, el partido no
-vuelve a pendiente.
-
-En cada `--status` y al final de una ejecución real, el script revisa la biblioteca local:
-
-- busca archivos de video en `DIRECTORIO_BASE`;
-- también revisa la ruta guardada del partido si existe;
-- opcionalmente revisa rutas extra configuradas en `MUNDIAL_DIRECTORIOS_EXTRA`;
-- si encuentra un video, guarda `archivo_local`, `archivo_local_ultimo`,
-  `archivo_existe`, `archivo_local_estado`, `tamano_mb`, `duracion_min`, `resolucion`,
-  `codec_video`, `fps`, `bitrate_kbps` e `idioma_detectado_archivo`;
-- si ya no encuentra el video, conserva `archivo_local_ultimo` y marca
-  `archivo_local_estado=movido_o_borrado`, sin cambiar `descargado`,
-  `estado_final` ni `necesita_mejora`.
-
-Para leer duración, resolución e idioma de pistas de audio usa `ffprobe` si está instalado.
-Si no está, igual detecta existencia y tamaño.
-
-### Nombres y postproceso
-
-Los archivos completos se renombran a un formato estable cuando el script puede hacerlo de
-forma segura:
-
-```text
-001_mexico_vs_sudafrica_en.mkv
-002_corea_del_sur_vs_rep_checa_es.mp4
-```
-
-El prefijo numérico evita colisiones, los equipos salen del calendario en español y el
-sufijo indica idioma/estado: `_es` es final, `_en` queda como mejorable. Si qBittorrent
-está administrando el archivo, el renombrado se intenta por la Web API de qBittorrent. Para
-fuentes manuales o `yt-dlp`, el renombrado puede hacerse directamente sobre el archivo.
-
-No se recomprime por defecto. El postproceso queda como evaluación registrada en estado:
-si el archivo pesa hasta 5 GB y está en 720p o menos, se marca `mantener_origen`; si supera
-5 GB o viene por encima de 720p, queda `revisar` para decidir manualmente si vale la pena
-remuxear o recomprimir.
-
-Cuando una descarga se encola, el estado guarda `descarga_iniciada_en`,
-`revisar_descarga_despues_de` y `torrent_hash` si está disponible. La revisión de una hora
-es una referencia: cada corrida consulta qBittorrent y solo mueve/renombra/verifica cuando
-el progreso real está completo.
-
-Si qBittorrent está corriendo y la Web API responde, también sincroniza torrents completos:
-
-- detecta torrents ya completados;
-- los compara contra el calendario/estado por título y equipos;
-- si están en la carpeta por defecto de qBittorrent, le pide a qBittorrent que los mueva al
-  destino final por fase/grupo;
-- no mueve archivos con `shutil` mientras qBittorrent los administra.
-
-Esto se controla con:
-
-```env
-QBIT_MOVER_COMPLETADOS=1
-QBIT_BUSCAR_TODAS_LAS_DESCARGAS=1
-MUNDIAL_RENOMBRAR_ARCHIVOS=1
-```
-
-En una ejecución normal el script puede abrir qBittorrent si no está corriendo. En `--status`
-no lo abre: solo informa el estado para que consultar no dispare aplicaciones.
-
-También se generan:
-
-```text
-estado_partidos.txt
-reporte_diario.txt
-<DIRECTORIO_BASE>/index.html
-<DIRECTORIO_BASE>/playlist_mundial.m3u
-```
-
-El índice HTML permite abrir los partidos descargados desde una página simple, agrupados por
-grupo/fase. La playlist M3U sirve para abrir todo desde VLC u otro reproductor compatible.
-
-La zona horaria del reporte diario se puede cambiar con:
-
-```env
-MUNDIAL_ZONA_HORARIA=America/Argentina/Buenos_Aires
-```
+Detalle de reglas, idioma, historial, nombres, postproceso y reportes:
+[`docs/funcionamiento.md`](docs/funcionamiento.md).
 
 ## Instalación
 
@@ -308,98 +186,25 @@ python descargar_partidos.py --marcar-descargado 1 --idioma es --archivo "Mexico
 descargado o en cola. Si lo marcás con `--idioma en`, queda como `MEJORABLE`; si lo marcás
 con `--idioma es`, queda como `FINAL`.
 
-## Estructura de carpetas
+## Documentación
 
-```
-~/Desktop/Mundial_Partidos/
-├── Fase_de_Grupos/
-│   ├── Grupo_A/   (México, Sudáfrica, Corea del Sur, Rep. Checa)
-│   ├── Grupo_B/   (Canadá, Bosnia, Qatar, Suiza)
-│   ├── ...
-│   ├── Grupo_J/   (Argentina ⭐, Argelia, Austria, Jordania)
-│   └── Grupo_L/
-├── Octavos_de_Final/
-├── Cuartos_de_Final/
-├── Semifinales/
-├── Tercer_Puesto/
-└── Final/
-```
-
-## Archivos del proyecto
-
-| Archivo | En el repo | Descripción |
-|---------|:----------:|-------------|
-| `descargar_partidos.py` | ✅ | Script principal, coordinador |
-| `buscador_torrents.py` | ✅ | Fachada del buscador y ranking final |
-| `busqueda_reglas.py` | ✅ | Queries, scoring y validaciones compartidas |
-| `fuentes_torrent.py` | ✅ | Scrapers/APIs de indexadores torrent |
-| `fallback_ytdlp.py` | ✅ | Fallback tardío y validado con yt-dlp |
-| `groq_asistente.py` | ✅ | Asistente opcional para queries y clasificación |
-| `qbit_manager.py` | ✅ | Integración con qBittorrent (macOS/Windows/Linux) |
-| `notificador.py` | ✅ | Notificaciones del sistema |
-| `config.py` | ✅ | Configuración centralizada (lee de `.env`) |
-| `estado_descargas.py` | ✅ | Estado persistente separado del calendario |
-| `idioma_utils.py` | ✅ | Detección y clasificación de idioma |
-| `nombres_archivos.py` | ✅ | Nombres canónicos de archivos descargados |
-| `fuentes_manuales.py` | ✅ | Lógica para fuentes declaradas por el usuario |
-| `organizador_descargas.py` | ✅ | Mueve torrents completos a la carpeta final |
-| `verificador_archivos.py` | ✅ | Verifica archivos locales y metadata con ffprobe |
-| `indice_biblioteca.py` | ✅ | Genera índice HTML y playlist M3U |
-| `reporte_diario.py` | ✅ | Genera resumen diario de partidos y mejoras |
-| `calendario_mundial_2026.json` | ✅ | 104 partidos con fechas UTC |
-| `requirements.txt` | ✅ | Dependencias Python |
-| `.env.example` | ✅ | Template para configuración local |
-| `fuentes_torrent.example.json` | ✅ | Template para indexadores |
-| `fuentes_manuales.example.json` | ✅ | Template para fuentes manuales |
-| `docs/archivos-locales.md` | ✅ | Guía de archivos ignorados, generados y locales |
-| `docs/plataformas.md` | ✅ | Estado de soporte por sistema operativo |
-| `setup.sh` | ✅ | Setup automático macOS |
-| `menu.sh` | ✅ | Menú interactivo Unix (macOS/Linux manual) |
-| `run.sh` | ✅ | Ejecutor portable Unix (macOS/Linux) |
-| `run_windows.bat` | ✅ | Ejecutor portable Windows |
-| `install_macos_launchd.sh` | ✅ | Instala tarea launchd |
-| `install_windows_task.bat` | ✅ | Instala tarea programada Windows |
-| `.env` | ❌ | Rutas y credenciales locales |
-| `fuentes_torrent.json` | ❌ | Mirrors reales de indexadores |
-| `fuentes_manuales.json` | ❌ | URLs de partidos del usuario |
-| `estado_descargas.json` | ❌ | Estado local de descargas |
-| `estado_partidos.txt` | ❌ | Resumen legible de estado, idioma y archivo |
-| `reporte_diario.txt` | ❌ | Reporte diario generado |
-| `mundial.log` | ❌ | Logs de ejecución |
-
-Detalle de estos archivos: [`docs/archivos-locales.md`](docs/archivos-locales.md).
+- [`docs/funcionamiento.md`](docs/funcionamiento.md): reglas de búsqueda, idioma,
+  historial, nombres, postproceso y reportes.
+- [`docs/archivos-locales.md`](docs/archivos-locales.md): archivos ignorados, generados y
+  configuración local.
+- [`docs/plataformas.md`](docs/plataformas.md): qué está probado y qué revisar en macOS,
+  Linux o Windows.
+- [`docs/qbittorrent.md`](docs/qbittorrent.md): Web API, credenciales y diagnóstico de
+  qBittorrent.
+- [`docs/estructura.md`](docs/estructura.md): carpetas generadas e inventario de archivos.
 
 ## qBittorrent
 
-La descarga vía qBittorrent intenta primero la Web API (`host:puerto`). Si la Web API
-no responde, se usa un fallback que abre el magnet link directamente con la aplicación
-asociada del sistema (`open` en macOS, `cmd /c start` en Windows, `xdg-open` en Linux).
-En `--status` el script no abre aplicaciones por su cuenta: solo consulta la Web API. Si
-qBittorrent está abierto pero la Web UI está deshabilitada o en otro puerto, el estado lo
-va a informar como Web API no disponible, no como descarga fallida.
+El script usa qBittorrent Web API como integración principal. La configuración esperada por
+defecto es `127.0.0.1:8080` con las credenciales de `.env`. En `--status` no abre apps: solo
+consulta la API.
 
-Para usar la Web API:
-
-1. Abrir qBittorrent.
-2. Ir a Preferencias > Web UI > Habilitar la interfaz de usuario web.
-3. Configurar:
-   - IP address: `127.0.0.1`
-   - Port: `8080`
-   - Username: `admin`
-   - Password: `adminadmin`
-4. Dejar desactivado HTTPS para uso local.
-5. Tocar Apply/OK y reiniciar qBittorrent si el puerto no responde.
-6. Verificar que `.env` tenga los mismos valores.
-
-Prueba rápida:
-
-```bash
-curl -I http://127.0.0.1:8080
-```
-
-Si responde `401`, `403` o `200`, la Web UI está levantada. Si responde `000` o
-connection refused, qBittorrent no está escuchando en ese puerto o falta aplicar la
-configuración.
+Guía completa: [`docs/qbittorrent.md`](docs/qbittorrent.md).
 
 ## Repos útiles
 
