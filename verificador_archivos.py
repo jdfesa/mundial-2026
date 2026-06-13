@@ -52,23 +52,29 @@ def _iter_videos(directorios: list[Path]) -> list[Path]:
     return videos
 
 
+def _normalizar_match(texto: str | None) -> str:
+    """Normaliza rutas/titulos para comparar snake_case, carpetas y nombres humanos."""
+    texto = normalizar_texto(texto)
+    return re.sub(r"[^a-z0-9]+", " ", texto).strip()
+
+
 def _score_candidato(partido: dict, path: Path) -> int:
-    texto = normalizar_texto(str(path))
+    texto = _normalizar_match(str(path))
     score = 0
 
-    archivo = normalizar_texto(partido.get("archivo"))
+    archivo = _normalizar_match(partido.get("archivo"))
     if archivo and archivo in texto:
         score += 100
 
-    equipo1 = normalizar_texto(partido.get("equipo1"))
-    equipo2 = normalizar_texto(partido.get("equipo2"))
+    equipo1 = _normalizar_match(partido.get("equipo1"))
+    equipo2 = _normalizar_match(partido.get("equipo2"))
     if equipo1 and equipo1 in texto:
         score += 30
     if equipo2 and equipo2 in texto:
         score += 30
 
     partido_id = partido.get("id")
-    if partido_id is not None and re.search(rf"\b{partido_id}\b", texto):
+    if partido_id is not None and re.search(rf"\b0*{partido_id}\b", texto):
         score += 5
 
     return score

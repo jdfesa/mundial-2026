@@ -28,8 +28,13 @@ def directorio_partido(partido: dict) -> str:
     return os.path.join(config.DIRECTORIO_BASE, carpeta_fase)
 
 
+def _normalizar_match(texto: str | None) -> str:
+    texto = normalizar_texto(texto)
+    return " ".join("".join(c if c.isalnum() else " " for c in texto).split())
+
+
 def _score_torrent_partido(torrent: dict, partido: dict) -> int:
-    texto = normalizar_texto(" ".join([
+    texto = _normalizar_match(" ".join([
         torrent.get("nombre", ""),
         torrent.get("content_path", ""),
     ]))
@@ -40,18 +45,18 @@ def _score_torrent_partido(torrent: dict, partido: dict) -> int:
     if torrent_hash and partido_hash and torrent_hash == partido_hash:
         score += 200
 
-    archivo = normalizar_texto(partido.get("archivo"))
+    archivo = _normalizar_match(partido.get("archivo"))
     if archivo and archivo in texto:
         score += 120
 
-    equipo1 = normalizar_texto(partido.get("equipo1"))
-    equipo2 = normalizar_texto(partido.get("equipo2"))
+    equipo1 = _normalizar_match(partido.get("equipo1"))
+    equipo2 = _normalizar_match(partido.get("equipo2"))
     if equipo1 and equipo1 in texto:
         score += 30
     if equipo2 and equipo2 in texto:
         score += 30
 
-    grupo = normalizar_texto(partido.get("grupo"))
+    grupo = _normalizar_match(partido.get("grupo"))
     if grupo and grupo in texto:
         score += 10
 
