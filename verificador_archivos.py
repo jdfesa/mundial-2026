@@ -16,6 +16,7 @@ from pathlib import Path
 
 import config
 from idioma_utils import detectar_idioma, idioma_es_final, normalizar_texto
+from nombres_archivos import nombre_canonico_partido
 
 logger = logging.getLogger("mundial")
 
@@ -116,12 +117,26 @@ def _extraer_metadata_ffprobe(datos: dict) -> dict:
     except (TypeError, ValueError):
         pass
 
+    try:
+        bitrate = float(formato.get("bit_rate", 0))
+        if bitrate > 0:
+            meta["bitrate_kbps"] = round(bitrate / 1000)
+    except (TypeError, ValueError):
+        pass
+
     for stream in streams:
         if stream.get("codec_type") == "video" and "resolucion" not in meta:
             width = stream.get("width")
             height = stream.get("height")
             if width and height:
                 meta["resolucion"] = f"{width}x{height}"
+                meta["ancho"] = width
+                meta["alto"] = height
+            if stream.get("codec_name"):
+                meta["codec_video"] = stream.get("codec_name")
+            fps = _parse_fps(stream.get("r_frame_rate"))
+            if fps:
+                meta["fps"] = fps
         if stream.get("codec_type") == "audio":
             tags = stream.get("tags", {})
             idioma = tags.get("language")
@@ -136,7 +151,131 @@ def _extraer_metadata_ffprobe(datos: dict) -> dict:
     return meta
 
 
-def verificar_partido(partido: dict, videos_cache: list[Path] | None = None) -> dict | None:
+def _parse_fps(valor: str | None) -> float | None:
+    if not valor or valor == "0/0":
+        return None
+    try:
+        if "/" in valor:
+            numerador, denominador = valor.split("/", 1)
+            denominador_float = float(denominador)
+            if denominador_float == 0:
+                return None
+            return round(float(numerador) / denominador_float, 3)
+        return round(float(valor), 3)
+    except (TypeError, ValueError):
+        return None
+
+
+def _evaluar_postproceso(meta: dict) -> dict:
+    umbral_gb = float(getattr(config, "POSTPROCESO_UMBRAL_GB", 5.0))
+    altura_preferida = int(getattr(config, "ALTURA_PREFERIDA", 720))
+    tamano_gb = round(float(meta.get("tamano_mb", 0)) / 1024, 2)
+    alto = meta.get("alto")
+    motivos = []
+
+    if tamano_gb > umbral_gb:
+        motivos.append(f"tamano>{umbral_gb:g}GB")
+    if alto and alto > altura_preferida:
+        motivos.append(f"resolucion>{altura_preferida}p")
+
+    if motivos:
+        estado = "revisar"
+        accion = "evaluar_remux_o_compresion"
+    else:
+        estado = "omitido"
+        accion = "mantener_origen"
+        motivos.append("tamano_y_resolucion_ok")
+
+    return {
+        "estado": estado,
+        "accion": accion,
+        "motivo": ", ".join(motivos),
+        "umbral_gb": umbral_gb,
+        "altura_preferida": altura_preferida,
+        "tamano_gb": tamano_gb,
+    }
+
+
+def _target_sin_colision(path: Path, nombre: str) -> Path:
+    destino = path.with_name(nombre)
+    if not destino.exists() or destino == path:
+        return destino
+
+    stem = destino.stem
+    suffix = destino.suffix
+    for indice in range(2, 100):
+        candidato = destino.with_name(f"{stem}_{indice}{suffix}")
+        if not candidato.exists():
+            return candidato
+    return destino.with_name(f"{stem}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}{suffix}")
+
+
+def _proveedor_filesystem(partido: dict) -> bool:
+    proveedores = getattr(config, "RENOMBRAR_PROVEEDORES_FILESYSTEM", {"manual", "yt-dlp"})
+    return partido.get("proveedor") in proveedores
+
+
+def _renombrar_si_corresponde(partido: dict, path: Path, idioma: str | None) -> tuple[Path, dict]:
+    info = {
+        "nombre_canonico": nombre_canonico_partido(partido, path.suffix, idioma),
+        "renombrado": False,
+    }
+    if not getattr(config, "RENOMBRAR_ARCHIVOS_CANONICOS", True):
+        return path, info
+
+    nombre_canonico = info["nombre_canonico"]
+    if path.name == nombre_canonico:
+        return path, info
+
+    try:
+        from qbit_manager import renombrar_archivo_torrent
+
+        nuevo_qbit = renombrar_archivo_torrent(str(path), nombre_canonico)
+    except Exception as e:
+        logger.debug(f"No se intento renombrado via qBittorrent: {e}")
+        nuevo_qbit = None
+
+    if nuevo_qbit:
+        nuevo_path = Path(nuevo_qbit)
+        info.update({
+            "renombrado": True,
+            "renombrado_en": datetime.now(timezone.utc).isoformat(),
+            "archivo_nombre_anterior": path.name,
+            "metodo_renombrado": "qbittorrent",
+        })
+        return nuevo_path, info
+
+    if not _proveedor_filesystem(partido):
+        info["renombrado_pendiente"] = True
+        info["metodo_renombrado"] = "pendiente_qbittorrent"
+        return path, info
+
+    destino = _target_sin_colision(path, nombre_canonico)
+    try:
+        path.rename(destino)
+    except OSError as e:
+        logger.warning(f"No se pudo renombrar archivo local {path.name}: {e}")
+        info["renombrado_error"] = str(e)
+        return path, info
+
+    logger.info(f"Archivo renombrado: {path.name} -> {destino.name}")
+    info.update({
+        "renombrado": True,
+        "renombrado_en": datetime.now(timezone.utc).isoformat(),
+        "archivo_nombre_anterior": path.name,
+        "metodo_renombrado": "filesystem",
+    })
+    if destino.name != nombre_canonico:
+        info["nombre_canonico"] = destino.name
+        info["colision_nombre_canonico"] = nombre_canonico
+    return destino, info
+
+
+def verificar_partido(
+    partido: dict,
+    videos_cache: list[Path] | None = None,
+    renombrar_archivos: bool = False,
+) -> dict | None:
     """Busca el mejor archivo local para un partido y devuelve metadata."""
     directorios = _directorios_busqueda(partido)
     videos = videos_cache if videos_cache is not None else _iter_videos(directorios)
@@ -156,12 +295,23 @@ def verificar_partido(partido: dict, videos_cache: list[Path] | None = None) -> 
     if not candidatos:
         return None
 
-    candidatos.sort(key=lambda item: (item[0], item[1].stat().st_size), reverse=True)
+    def _tamano_seguro(item: tuple[int, Path]) -> int:
+        try:
+            return item[1].stat().st_size
+        except OSError:
+            return 0
+
+    candidatos.sort(key=lambda item: (item[0], _tamano_seguro(item)), reverse=True)
     _, path = candidatos[0]
-    stat = path.stat()
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
     meta = {
         "archivo_local": str(path),
+        "archivo_local_ultimo": str(path),
         "archivo_existe": True,
+        "archivo_local_estado": "presente",
         "tamano_mb": round(stat.st_size / (1024 * 1024), 1),
         "verificado_en": datetime.now(timezone.utc).isoformat(),
     }
@@ -176,10 +326,40 @@ def verificar_partido(partido: dict, videos_cache: list[Path] | None = None) -> 
     )
     idioma = meta.get("idioma_audio") or detectar_idioma(texto_idioma)
     meta["idioma_detectado_archivo"] = idioma
+
+    if renombrar_archivos:
+        path_renombrado, info_nombre = _renombrar_si_corresponde(partido, path, idioma)
+        meta.update(info_nombre)
+        if path_renombrado != path:
+            path = path_renombrado
+            meta["archivo_local"] = str(path)
+            meta["archivo_local_ultimo"] = str(path)
+            try:
+                stat = path.stat()
+                meta["tamano_mb"] = round(stat.st_size / (1024 * 1024), 1)
+            except OSError:
+                meta["archivo_existe"] = False
+                meta["archivo_local_estado"] = "renombrado_pendiente_verificacion"
+    else:
+        meta["nombre_canonico"] = nombre_canonico_partido(partido, path.suffix, idioma)
+
+    meta["postproceso"] = _evaluar_postproceso(meta)
     return meta
 
 
-def verificar_archivos(calendario: list[dict]) -> dict:
+def _registrar_archivo_ausente(partido: dict) -> None:
+    ultimo = partido.get("archivo_local") or partido.get("archivo_local_ultimo")
+    if ultimo:
+        partido["archivo_local_ultimo"] = ultimo
+        partido["archivo_local_estado"] = "movido_o_borrado"
+    else:
+        partido["archivo_local_estado"] = "sin_archivo_local"
+    partido["archivo_local"] = None
+    partido["archivo_existe"] = False
+    partido["verificado_en"] = datetime.now(timezone.utc).isoformat()
+
+
+def verificar_archivos(calendario: list[dict], renombrar_archivos: bool = False) -> dict:
     """Actualiza los partidos con metadata local y retorna resumen."""
     videos_cache = _iter_videos(_directorios_busqueda())
     resumen = {"verificados": 0, "encontrados": 0, "sin_archivo": 0}
@@ -188,10 +368,9 @@ def verificar_archivos(calendario: list[dict]) -> dict:
         if not partido.get("descargado"):
             continue
         resumen["verificados"] += 1
-        meta = verificar_partido(partido, videos_cache)
+        meta = verificar_partido(partido, videos_cache, renombrar_archivos=renombrar_archivos)
         if not meta:
-            partido["archivo_existe"] = False
-            partido["verificado_en"] = datetime.now(timezone.utc).isoformat()
+            _registrar_archivo_ausente(partido)
             resumen["sin_archivo"] += 1
             continue
 

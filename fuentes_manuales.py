@@ -14,6 +14,7 @@ import subprocess
 import unicodedata
 
 import config
+from nombres_archivos import nombre_base_canonico_partido
 
 logger = logging.getLogger("mundial")
 
@@ -24,12 +25,6 @@ def _normalizar(texto: str | None) -> str:
     texto = "".join(c for c in texto if not unicodedata.combining(c))
     texto = texto.lower()
     return re.sub(r"[^a-z0-9]+", " ", texto).strip()
-
-
-def _nombre_archivo_seguro(nombre: str) -> str:
-    nombre = re.sub(r"[^\w\-. ]+", "_", nombre, flags=re.UNICODE)
-    nombre = re.sub(r"\s+", "_", nombre.strip())
-    return nombre or "partido"
 
 
 def _yt_dlp_path() -> str | None:
@@ -110,7 +105,7 @@ def descargar_fuente_manual(
     equipo1 = partido.get("equipo1", "Equipo1")
     equipo2 = partido.get("equipo2", "Equipo2")
     titulo = fuente.get("titulo") or f"{equipo1}_vs_{equipo2}"
-    nombre_base = _nombre_archivo_seguro(titulo)
+    nombre_base = nombre_base_canonico_partido(partido, fuente.get("idioma"))
     ruta_salida = os.path.join(directorio_destino, f"{nombre_base}.%(ext)s")
 
     logger.info(f"  Fuente manual: {fuente.get('nombre', url)}")

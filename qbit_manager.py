@@ -8,6 +8,7 @@ import logging
 import os
 import platform
 import config
+from pathlib import Path
 
 logger = logging.getLogger("mundial")
 
@@ -326,6 +327,97 @@ def mover_torrent(torrent_hash: str, carpeta_destino: str) -> bool:
     except Exception as e:
         logger.error(f"Error moviendo torrent en qBittorrent: {e}")
         return False
+
+
+def _candidatos_archivo_torrent(torrent: dict, ruta_relativa: str) -> list[Path]:
+    """Devuelve posibles rutas absolutas para un archivo de un torrent."""
+    candidatos = []
+    save_path = torrent.get("ruta")
+    content_path = torrent.get("content_path")
+    nombre = torrent.get("nombre")
+
+    if save_path:
+        candidatos.append(Path(save_path) / ruta_relativa)
+        if nombre:
+            candidatos.append(Path(save_path) / nombre / ruta_relativa)
+    if content_path:
+        content = Path(content_path)
+        candidatos.append(content / ruta_relativa)
+        if content.name == Path(ruta_relativa).name:
+            candidatos.append(content)
+
+    return candidatos
+
+
+def renombrar_archivo_torrent(path_actual: str, nombre_nuevo: str) -> str | None:
+    """
+    Renombra un archivo administrado por qBittorrent usando su API.
+
+    Retorna la nueva ruta absoluta si encuentra el archivo y la API acepta el
+    cambio. Si qBittorrent no esta disponible o el archivo no pertenece a un
+    torrent conocido, retorna None para que el llamador decida el fallback.
+    """
+    if not path_actual or not nombre_nuevo:
+        return None
+
+    cliente = obtener_cliente(abrir_si_no_corre=False)
+    if not cliente:
+        return None
+
+    try:
+        objetivo = Path(path_actual).expanduser().resolve()
+    except OSError:
+        return None
+
+    try:
+        torrents = listar_torrents(
+            incluir_todos=getattr(config, "QBIT_BUSCAR_TODAS_LAS_DESCARGAS", True),
+            iniciar_si_no_corre=False,
+        )
+        for torrent in torrents:
+            torrent_hash = torrent.get("hash")
+            if not torrent_hash:
+                continue
+
+            try:
+                archivos = cliente.torrents_files(torrent_hash=torrent_hash)
+            except Exception:
+                continue
+
+            for archivo in archivos:
+                ruta_relativa = _torrent_attr(archivo, "name", "")
+                if not ruta_relativa:
+                    continue
+
+                for candidato in _candidatos_archivo_torrent(torrent, ruta_relativa):
+                    try:
+                        if candidato.expanduser().resolve() != objetivo:
+                            continue
+                    except OSError:
+                        continue
+
+                    nueva_relativa = str(Path(ruta_relativa).with_name(nombre_nuevo))
+                    try:
+                        cliente.torrents_rename_file(
+                            torrent_hash=torrent_hash,
+                            old_path=ruta_relativa,
+                            new_path=nueva_relativa,
+                        )
+                    except TypeError:
+                        cliente.torrents_renameFile(
+                            torrent_hash=torrent_hash,
+                            old_path=ruta_relativa,
+                            new_path=nueva_relativa,
+                        )
+                    logger.info(
+                        "Archivo renombrado por qBittorrent: "
+                        f"{Path(path_actual).name} -> {nombre_nuevo}"
+                    )
+                    return str(objetivo.with_name(nombre_nuevo))
+    except Exception as e:
+        logger.debug(f"No se pudo renombrar via qBittorrent: {e}")
+
+    return None
 
 
 def listar_descargas_mundial(iniciar_si_no_corre: bool = False) -> list:

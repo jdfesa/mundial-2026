@@ -25,6 +25,7 @@ from estado_descargas import (
     normalizar_calendario,
 )
 from idioma_utils import detectar_idioma, etiqueta_idioma, idioma_es_final
+from nombres_archivos import nombre_base_canonico_partido
 from indice_biblioteca import generar_indice
 from notificador import (
     notificar_descarga_iniciada,
@@ -168,14 +169,18 @@ def registrar_descarga(partido: dict, resultado: dict, ruta: str | None = None) 
     """Actualiza campos de estado despues de iniciar/completar una descarga."""
     titulo = resultado.get("titulo") or partido.get("archivo") or ""
     idioma = resultado.get("idioma") or detectar_idioma(titulo)
+    ahora = datetime.now(timezone.utc).isoformat()
 
     partido["descargado"] = True
+    partido.setdefault("descargado_en", ahora)
+    partido["ultima_descarga_en"] = ahora
     partido["archivo"] = titulo
     partido["proveedor"] = resultado.get("fuente")
     partido["ruta"] = ruta or resultado.get("ruta")
     partido["idioma"] = idioma
     partido["estado_final"] = idioma_es_final(idioma)
     partido["necesita_mejora"] = not partido["estado_final"]
+    partido["nombre_base_canonico"] = nombre_base_canonico_partido(partido, idioma)
 
 
 def resultado_mejora_estado(partido: dict, resultado: dict) -> bool:
@@ -222,7 +227,7 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
     """
     equipo1 = partido["equipo1"]
     equipo2 = partido["equipo2"]
-    nombre = f"{equipo1}_vs_{equipo2}"
+    nombre = nombre_base_canonico_partido(partido)
     prioridad = partido.get("prioridad", "normal")
 
     logger.info(f"{'='*60}")
@@ -308,6 +313,7 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
         # Enviar a qBittorrent
         from qbit_manager import enviar_magnet
         directorio = crear_directorio_partido(partido)
+        nombre = nombre_base_canonico_partido(partido, resultado.get("idioma"))
 
         exito = enviar_magnet(
             magnet_link=resultado["magnet"],
@@ -371,7 +377,7 @@ def mostrar_estado():
     aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
     sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=False)
-    verificar_archivos(calendario)
+    verificar_archivos(calendario, renombrar_archivos=False)
     guardar_estado(calendario, estado)
     generar_reporte_diario(calendario)
     generar_indice(calendario)
@@ -398,9 +404,12 @@ def mostrar_estado():
         print(f"\n✅ DESCARGADOS ({len(descargados)}):")
         for p in descargados:
             estado = "FINAL" if p.get("estado_final") else "MEJORABLE"
+            local = "local" if p.get("archivo_existe") else "historial"
+            nombre_archivo = p.get("nombre_canonico") or p.get("nombre_base_canonico") or p.get("archivo")
             print(
                 f"   {p['equipo1']} vs {p['equipo2']} ({p.get('grupo', '?')}) "
-                f"- {etiqueta_idioma(p.get('idioma'))} - {estado}"
+                f"- {etiqueta_idioma(p.get('idioma'))} - {estado} - {local} "
+                f"- {nombre_archivo or '-'}"
             )
 
     # Próximos partidos
@@ -511,7 +520,7 @@ def main():
             {"titulo": titulo, "fuente": "manual_estado", "idioma": marcar_idioma},
             marcar_ruta or partido.get("ruta"),
         )
-        verificar_archivos(calendario)
+        verificar_archivos(calendario, renombrar_archivos=False)
         guardar_estado(calendario, estado)
         generar_reporte_diario(calendario)
         generar_indice(calendario)
@@ -540,7 +549,7 @@ def main():
     normalizar_calendario(calendario)
     if not dry_run:
         sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
-        verificar_archivos(calendario)
+        verificar_archivos(calendario, renombrar_archivos=True)
     logger.info(f"Calendario cargado: {len(calendario)} partidos")
 
     # Crear directorio base
@@ -628,11 +637,10 @@ def main():
                 else:
                     contadores["pendientes"] += 1
 
-    # Guardar calendario actualizado
+    # Guardar estado operativo separado del calendario.
     if not dry_run:
         sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
-        verificar_archivos(calendario)
-        guardar_calendario(calendario)
+        verificar_archivos(calendario, renombrar_archivos=True)
         guardar_estado(calendario, estado)
         generar_reporte_diario(calendario)
         generar_indice(calendario)

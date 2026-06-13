@@ -20,6 +20,16 @@ def _estado(partido: dict) -> str:
     return "mejorable"
 
 
+def _local(partido: dict) -> str:
+    if not partido.get("descargado"):
+        return "-"
+    if partido.get("archivo_existe"):
+        return "local"
+    if partido.get("archivo_local_ultimo"):
+        return "movido"
+    return "sin_local"
+
+
 def generar_reporte_diario(calendario: list[dict]) -> None:
     tz = ZoneInfo(getattr(config, "ZONA_HORARIA_REPORTE", "America/Argentina/Buenos_Aires"))
     ahora = datetime.now(tz)
@@ -61,7 +71,8 @@ def generar_reporte_diario(calendario: list[dict]) -> None:
             lineas.append(
                 f"  {partido.get('id', '?'):>3} | {etiqueta_idioma(partido.get('idioma')):<11} | "
                 f"{partido.get('equipo1')} vs {partido.get('equipo2')} | "
-                f"{partido.get('archivo') or '-'}"
+                f"{_local(partido)} | "
+                f"{partido.get('nombre_canonico') or partido.get('nombre_base_canonico') or partido.get('archivo') or '-'}"
             )
     else:
         lineas.append("  No hay versiones mejorables.")

@@ -21,6 +21,16 @@ def _estado(partido: dict) -> str:
     return "Mejorable"
 
 
+def _estado_local(partido: dict) -> str:
+    if not partido.get("descargado"):
+        return "-"
+    if partido.get("archivo_existe"):
+        return "Local"
+    if partido.get("archivo_local_ultimo"):
+        return "Movido"
+    return "Sin local"
+
+
 def _href(path: str) -> str:
     try:
         rel = os.path.relpath(path, config.DIRECTORIO_BASE)
@@ -67,14 +77,19 @@ def generar_indice(calendario: list[dict]) -> None:
 
     for grupo in sorted(grupos):
         partes.append(f"<h2>{html.escape(grupo)}</h2>")
-        partes.append("<table><thead><tr><th>Partido</th><th>Idioma</th><th>Estado</th><th>Archivo</th></tr></thead><tbody>")
+        partes.append("<table><thead><tr><th>Partido</th><th>Idioma</th><th>Estado</th><th>Local</th><th>Archivo</th></tr></thead><tbody>")
         for partido in sorted(grupos[grupo], key=lambda p: p.get("id", 9999)):
             nombre = f"{partido.get('equipo1')} vs {partido.get('equipo2')}"
             idioma = etiqueta_idioma(partido.get("idioma"))
             estado = _estado(partido)
             clase = estado.lower()
             archivo_local = partido.get("archivo_local")
-            archivo = partido.get("archivo") or "-"
+            archivo = (
+                partido.get("nombre_canonico")
+                or partido.get("nombre_base_canonico")
+                or partido.get("archivo")
+                or "-"
+            )
             if archivo_local and os.path.exists(archivo_local):
                 link = f"<a href=\"{_href(archivo_local)}\">{html.escape(Path(archivo_local).name)}</a>"
                 playlist.append(f"#EXTINF:-1,{nombre}")
@@ -86,6 +101,7 @@ def generar_indice(calendario: list[dict]) -> None:
                 f"<td>{html.escape(nombre)}</td>"
                 f"<td>{html.escape(idioma)}</td>"
                 f"<td class=\"{clase}\">{html.escape(estado)}</td>"
+                f"<td>{html.escape(_estado_local(partido))}</td>"
                 f"<td>{link}</td>"
                 "</tr>"
             )

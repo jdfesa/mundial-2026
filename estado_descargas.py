@@ -11,11 +11,14 @@ from datetime import datetime, timezone
 
 import config
 from idioma_utils import detectar_idioma, etiqueta_idioma, idioma_es_final
+from nombres_archivos import nombre_base_canonico_partido
 
 logger = logging.getLogger("mundial")
 
 STATE_FIELDS = (
     "descargado",
+    "descargado_en",
+    "ultima_descarga_en",
     "intentos",
     "ultimo_intento",
     "archivo",
@@ -24,15 +27,31 @@ STATE_FIELDS = (
     "idioma",
     "estado_final",
     "necesita_mejora",
+    "nombre_base_canonico",
+    "nombre_canonico",
     "archivo_local",
+    "archivo_local_ultimo",
+    "archivo_local_estado",
     "archivo_existe",
     "tamano_mb",
     "duracion_min",
     "resolucion",
+    "ancho",
+    "alto",
+    "fps",
+    "bitrate_kbps",
+    "codec_video",
     "ffprobe",
     "pistas_audio",
     "idioma_detectado_archivo",
     "verificado_en",
+    "postproceso",
+    "renombrado_en",
+    "archivo_nombre_anterior",
+    "metodo_renombrado",
+    "renombrado_pendiente",
+    "renombrado_error",
+    "colision_nombre_canonico",
     "intentos_mejora",
     "ultimo_intento_mejora",
 )
@@ -83,8 +102,6 @@ def aplicar_estado(calendario: list[dict], estado: dict) -> None:
             continue
         for campo in STATE_FIELDS:
             if campo in datos:
-                if datos[campo] is None and partido.get(campo) not in (None, ""):
-                    continue
                 if campo == "descargado" and partido.get("descargado") and not datos[campo]:
                     continue
                 partido[campo] = datos[campo]
@@ -105,6 +122,13 @@ def _normalizar_estado_partido(partido: dict) -> None:
             partido["idioma"] = detectar_idioma(partido.get("archivo"))
         partido["estado_final"] = idioma_es_final(partido.get("idioma"))
         partido["necesita_mejora"] = not partido["estado_final"]
+        partido["nombre_base_canonico"] = nombre_base_canonico_partido(partido)
+        if partido.get("archivo_local") and not partido.get("archivo_local_ultimo"):
+            partido["archivo_local_ultimo"] = partido.get("archivo_local")
+        if not partido.get("archivo_local_estado"):
+            partido["archivo_local_estado"] = (
+                "presente" if partido.get("archivo_existe") else "no_verificado"
+            )
     else:
         partido.setdefault("idioma", None)
         partido.setdefault("estado_final", False)
@@ -188,8 +212,14 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
         idioma = etiqueta_idioma(partido.get("idioma")) if descargado else "-"
         archivo = partido.get("archivo") or "-"
         archivo_local = partido.get("archivo_local")
+        archivo_ultimo = partido.get("archivo_local_ultimo")
+        nombre_canonico = partido.get("nombre_canonico") or partido.get("nombre_base_canonico")
         if archivo_local:
-            archivo = f"{archivo} | local: {archivo_local}"
+            archivo = f"{nombre_canonico or archivo} | local: {os.path.basename(archivo_local)}"
+        elif archivo_ultimo:
+            archivo = f"{nombre_canonico or archivo} | ultimo local: {os.path.basename(archivo_ultimo)}"
+        elif nombre_canonico:
+            archivo = nombre_canonico
         datos_archivo = []
         if partido.get("tamano_mb"):
             datos_archivo.append(f"{partido['tamano_mb']} MB")
@@ -197,6 +227,12 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
             datos_archivo.append(f"{partido['duracion_min']} min")
         if partido.get("resolucion"):
             datos_archivo.append(str(partido["resolucion"]))
+        estado_local = partido.get("archivo_local_estado")
+        if descargado and estado_local:
+            datos_archivo.append(f"local: {estado_local}")
+        postproceso = partido.get("postproceso") or {}
+        if postproceso.get("estado"):
+            datos_archivo.append(f"post: {postproceso['estado']} ({postproceso.get('motivo', '-')})")
         extra = f" | {' / '.join(datos_archivo)}" if datos_archivo else ""
         fecha = partido.get("fecha_hora_utc", "-")
         grupo = partido.get("grupo", partido.get("fase", "-"))
