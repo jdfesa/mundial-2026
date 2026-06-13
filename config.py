@@ -75,6 +75,8 @@ MAX_INTENTOS = 15
 MINUTOS_ENTRE_REINTENTOS = 30
 # Minutos entre busquedas de mejora para partidos ya descargados en otro idioma
 MINUTOS_ENTRE_REINTENTOS_MEJORA = 180
+# Minutos desde que se encola una descarga hasta la primera revision esperada.
+DESCARGA_REVISAR_DESPUES_MINUTOS = int(os.getenv("DESCARGA_REVISAR_DESPUES_MINUTOS", "60"))
 
 # ─── Filtros de Búsqueda ─────────────────────────────────────────────────────
 MIN_SEEDERS = 1  # Bajo para torrents recién subidos del mundial
@@ -134,6 +136,24 @@ FUENTES_HABILITADAS = {
     "piratebay": True,
     "yt_dlp": True,  # Fallback con yt-dlp (YouTube, Dailymotion, etc.)
 }
+
+# ─── Groq / asistente opcional ──────────────────────────────────────────────
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+GROQ_HABILITADO = (
+    bool(GROQ_API_KEY)
+    and os.getenv("GROQ_HABILITADO", "1") not in {"0", "false", "False"}
+)
+GROQ_TIMEOUT_SEGUNDOS = int(os.getenv("GROQ_TIMEOUT_SEGUNDOS", "20"))
+GROQ_MAX_QUERIES = int(os.getenv("GROQ_MAX_QUERIES", "6"))
+GROQ_MAX_RESULTADOS_CLASIFICAR = int(os.getenv("GROQ_MAX_RESULTADOS_CLASIFICAR", "12"))
+GROQ_GENERAR_QUERIES = (
+    os.getenv("GROQ_GENERAR_QUERIES", "1") not in {"0", "false", "False"}
+)
+GROQ_CLASIFICAR_RESULTADOS = (
+    os.getenv("GROQ_CLASIFICAR_RESULTADOS", "1") not in {"0", "false", "False"}
+)
 
 
 def cargar_fuentes_torrent() -> dict:
