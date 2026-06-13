@@ -77,6 +77,9 @@ MINUTOS_ENTRE_REINTENTOS = 30
 MINUTOS_ENTRE_REINTENTOS_MEJORA = 180
 # Minutos desde que se encola una descarga hasta la primera revision esperada.
 DESCARGA_REVISAR_DESPUES_MINUTOS = int(os.getenv("DESCARGA_REVISAR_DESPUES_MINUTOS", "60"))
+# El fallback de yt-dlp es propenso a traer comentarios/reacciones. Se espera
+# mucho mas que los torrents antes de permitirlo.
+YTDLP_HORAS_ESPERA_POST_PARTIDO = int(os.getenv("YTDLP_HORAS_ESPERA_POST_PARTIDO", "24"))
 
 # ─── Filtros de Búsqueda ─────────────────────────────────────────────────────
 MIN_SEEDERS = 1  # Bajo para torrents recién subidos del mundial
@@ -191,10 +194,34 @@ def indexador_habilitado(nombre: str) -> bool:
 
 # ─── yt-dlp (fallback) ──────────────────────────────────────────────────────
 YTDLP_DURACION_MINIMA = 5400  # 90 minutos en segundos
+YTDLP_DURACION_MAXIMA = int(os.getenv("YTDLP_DURACION_MAXIMA", str(3 * 3600)))
+YTDLP_ALTURA_MINIMA = int(os.getenv("YTDLP_ALTURA_MINIMA", str(ALTURA_PREFERIDA)))
+YTDLP_RESULTADOS_BUSQUEDA = int(os.getenv("YTDLP_RESULTADOS_BUSQUEDA", "5"))
 YTDLP_FORMATO = (
-    f"bestvideo[height<={ALTURA_PREFERIDA}][ext=mp4]+bestaudio[ext=m4a]/"
-    f"best[height<={ALTURA_PREFERIDA}][ext=mp4]/"
-    f"best[height<={ALTURA_PREFERIDA}]/best"
+    f"bestvideo[height>={YTDLP_ALTURA_MINIMA}][height<={ALTURA_PREFERIDA}][ext=mp4]+bestaudio[ext=m4a]/"
+    f"best[height>={YTDLP_ALTURA_MINIMA}][height<={ALTURA_PREFERIDA}][ext=mp4]/"
+    f"best[height>={YTDLP_ALTURA_MINIMA}][height<={ALTURA_PREFERIDA}]"
 )
 YTDLP_TIMEOUT_SEGUNDOS = 7200
 YTDLP_EXTRA_ARGS = []
+YTDLP_KEYWORDS_NEGATIVAS = [
+    "commentary",
+    "comentarios",
+    "watchalong",
+    "watch along",
+    "reaction",
+    "reaccion",
+    "reacción",
+    "analisis",
+    "análisis",
+    "debate",
+    "preview",
+    "post match",
+    "pre match",
+    "simulation",
+    "simulacion",
+    "simulación",
+    "gameplay",
+    "ea fc",
+    "fifa 26",
+]

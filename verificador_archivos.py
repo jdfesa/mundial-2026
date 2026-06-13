@@ -196,6 +196,22 @@ def _evaluar_postproceso(meta: dict) -> dict:
     }
 
 
+def _validar_archivo_ytdlp(meta: dict) -> tuple[bool, str | None]:
+    duracion_min = meta.get("duracion_min")
+    if not duracion_min:
+        return False, "sin_duracion"
+    if duracion_min and duracion_min * 60 > getattr(config, "YTDLP_DURACION_MAXIMA", 3 * 3600):
+        return False, "duracion_larga"
+
+    alto = meta.get("alto")
+    if not alto:
+        return False, "sin_altura"
+    if alto and alto < getattr(config, "YTDLP_ALTURA_MINIMA", 720):
+        return False, f"altura_baja:{alto}"
+
+    return True, None
+
+
 def _target_sin_colision(path: Path, nombre: str) -> Path:
     destino = path.with_name(nombre)
     if not destino.exists() or destino == path:
@@ -376,6 +392,27 @@ def verificar_archivos(calendario: list[dict], renombrar_archivos: bool = False)
 
         resumen["encontrados"] += 1
         partido.update(meta)
+
+        if partido.get("proveedor") == "yt-dlp":
+            valido, razon = _validar_archivo_ytdlp(meta)
+            partido["archivo_valido"] = valido
+            if not valido:
+                partido["archivo_rechazado"] = partido.get("archivo_local")
+                partido["validacion_error"] = razon
+                partido["archivo_local_ultimo"] = partido.get("archivo_local")
+                partido["archivo_local"] = None
+                partido["archivo_local_estado"] = "rechazado"
+                partido["archivo_existe"] = False
+                partido["descargado"] = False
+                partido["estado_final"] = False
+                partido["necesita_mejora"] = False
+                partido["descarga_estado"] = "rechazada"
+                logger.warning(
+                    "Archivo yt-dlp rechazado para "
+                    f"{partido.get('equipo1')} vs {partido.get('equipo2')}: {razon}"
+                )
+                continue
+
         idioma_archivo = meta.get("idioma_detectado_archivo")
         if idioma_archivo and idioma_es_final(idioma_archivo):
             partido["idioma"] = idioma_archivo

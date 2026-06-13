@@ -67,7 +67,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
    órdenes: "Mexico vs South Africa" y "South Africa vs Mexico").
 
 3. Busca en los indexadores configurados en `fuentes_torrent.json`. Si no encuentra
-   nada, intenta con `yt-dlp` como fallback.
+   nada, `yt-dlp` queda reservado como fallback tardío y validado.
 
 4. Si `GROQ_HABILITADO=1`, Groq puede sumar queries de búsqueda y ajustar la puntuación
    de resultados ya encontrados. No agrega URLs por su cuenta ni salta las fuentes
@@ -79,7 +79,14 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
    - Calidad 720p: +30
    - Seeders (logarítmico): hasta +40
    - Tamaño ideal (1.5-5 GB): +15
-   - Keywords del mundial: +10
+    - Keywords del mundial: +10
+
+El fallback `yt-dlp` espera bastante más que los torrents antes de activarse
+(`YTDLP_HORAS_ESPERA_POST_PARTIDO`, por defecto 24 horas desde el inicio del partido).
+Antes de descargar, revisa metadata: ambos equipos deben aparecer en el título, debe haber
+señal de partido completo/replay, no puede contener palabras de comentario/reacción, debe
+durar entre 90 y 180 minutos y tener al menos 720p. Si un archivo descargado por `yt-dlp`
+no pasa esa validación local, queda como `rechazado` y el partido vuelve a pendiente.
 
 ### Lógica de idioma
 

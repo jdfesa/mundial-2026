@@ -234,6 +234,20 @@ def registrar_intento_mejora(partido: dict) -> None:
     partido["ultimo_intento_mejora"] = datetime.now(timezone.utc).isoformat()
 
 
+def ytdlp_listo_para_fallback(partido: dict) -> tuple[bool, datetime | None]:
+    """Indica si ya paso la espera larga para permitir fallback con yt-dlp."""
+    try:
+        fecha_partido = datetime.fromisoformat(
+            partido["fecha_hora_utc"].replace("Z", "+00:00")
+        )
+    except (KeyError, ValueError):
+        return False, None
+
+    espera_horas = getattr(config, "YTDLP_HORAS_ESPERA_POST_PARTIDO", 24)
+    minimo = fecha_partido + timedelta(hours=espera_horas)
+    return datetime.now(timezone.utc) >= minimo, minimo
+
+
 def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool = False) -> bool | None:
     """
     Busca y descarga un partido.
@@ -349,11 +363,23 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
             return False
     else:
         # Fallback: intentar con yt-dlp
-        logger.info(f"  No se encontraron torrents. Intentando fallback con yt-dlp...")
+        listo_ytdlp, habilitado_desde = ytdlp_listo_para_fallback(partido)
+        if not listo_ytdlp:
+            detalle = (
+                habilitado_desde.strftime("%Y-%m-%d %H:%M UTC")
+                if habilitado_desde else "fecha desconocida"
+            )
+            logger.info(
+                "  No se encontraron torrents. Se omite yt-dlp por seguridad "
+                f"hasta {detalle}"
+            )
+            return None
+
+        logger.info(f"  No se encontraron torrents. Intentando fallback validado con yt-dlp...")
         directorio = crear_directorio_partido(partido)
 
         if dry_run:
-            logger.info(f"  [DRY RUN] Se intentaría con yt-dlp")
+            logger.info(f"  [DRY RUN] Se intentaría con yt-dlp validado")
             return None if partido_mejorable(partido) else False
 
         resultado_yt = buscar_ytdlp(equipo1, equipo2, directorio)

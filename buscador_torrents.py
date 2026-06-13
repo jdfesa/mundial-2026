@@ -2,6 +2,7 @@
 Buscador multi-fuente de torrents para partidos del Mundial 2026.
 Busca en múltiples sitios torrent con prioridad en español.
 """
+import json
 import re
 import time
 import logging
@@ -10,6 +11,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote_plus
 
 import config
+from idioma_utils import detectar_idioma, normalizar_texto
 from nombres_archivos import nombre_base_canonico_partido
 
 logger = logging.getLogger("mundial")
@@ -152,6 +154,74 @@ def _traducir_equipo(nombre: str) -> str:
         "Japón": "Japan",
     }
     return traducciones.get(nombre, nombre)
+
+
+def _alternativas_equipo(nombre: str) -> set[str]:
+    alternativas = {nombre, _traducir_equipo(nombre)}
+    extras = {
+        "Estados Unidos": {"United States", "USA", "USMNT"},
+        "Rep. Checa": {"Czech Republic", "Czechia"},
+        "Bosnia-Herzegovina": {"Bosnia", "Bosnia and Herzegovina"},
+        "Corea del Sur": {"South Korea", "Korea Republic"},
+    }
+    alternativas.update(extras.get(nombre, set()))
+    return {normalizar_texto(a) for a in alternativas if a}
+
+
+def _titulo_contiene_equipo(titulo: str, equipo: str) -> bool:
+    titulo_norm = normalizar_texto(titulo)
+    return any(alt and alt in titulo_norm for alt in _alternativas_equipo(equipo))
+
+
+def _altura_metadata(info: dict) -> int | None:
+    altura = info.get("height")
+    if isinstance(altura, int):
+        return altura
+    alturas = []
+    for formato in info.get("formats") or []:
+        h = formato.get("height")
+        if isinstance(h, int):
+            alturas.append(h)
+    return max(alturas) if alturas else None
+
+
+def _validar_candidato_ytdlp(info: dict, equipo1: str, equipo2: str) -> tuple[bool, str]:
+    titulo = info.get("title") or ""
+    titulo_norm = normalizar_texto(titulo)
+
+    if not _titulo_contiene_equipo(titulo, equipo1) or not _titulo_contiene_equipo(titulo, equipo2):
+        return False, "no_contiene_ambos_equipos"
+
+    for keyword in getattr(config, "YTDLP_KEYWORDS_NEGATIVAS", []):
+        if normalizar_texto(keyword) in titulo_norm:
+            return False, f"keyword_negativa:{keyword}"
+
+    positivos = (
+        "full match",
+        "partido completo",
+        "completo",
+        "full game",
+        "match replay",
+        "replay",
+    )
+    if not any(p in titulo_norm for p in positivos):
+        return False, "sin_indicador_partido_completo"
+
+    duracion = info.get("duration")
+    if not isinstance(duracion, (int, float)):
+        return False, "sin_duracion"
+    if duracion < getattr(config, "YTDLP_DURACION_MINIMA", 5400):
+        return False, "duracion_corta"
+    if duracion > getattr(config, "YTDLP_DURACION_MAXIMA", 3 * 3600):
+        return False, "duracion_larga"
+
+    altura = _altura_metadata(info)
+    if altura is None:
+        return False, "sin_altura"
+    if altura < getattr(config, "YTDLP_ALTURA_MINIMA", 720):
+        return False, f"altura_baja:{altura}"
+
+    return True, "ok"
 
 
 def generar_queries(equipo1: str, equipo2: str) -> list[str]:
@@ -380,6 +450,7 @@ def buscar_ytdlp(equipo1: str, equipo2: str, directorio_destino: str) -> dict | 
     if not config.FUENTES_HABILITADAS.get("yt_dlp"):
         return None
 
+    import os
     import subprocess
     import shutil
 
@@ -387,7 +458,6 @@ def buscar_ytdlp(equipo1: str, equipo2: str, directorio_destino: str) -> dict | 
     ytdlp_path = shutil.which("yt-dlp")
     if not ytdlp_path:
         # Intentar en el venv
-        import os
         venv_path = os.path.join(config.DIRECTORIO_PROYECTO, "venv", "bin", "yt-dlp")
         if os.path.exists(venv_path):
             ytdlp_path = venv_path
@@ -395,51 +465,119 @@ def buscar_ytdlp(equipo1: str, equipo2: str, directorio_destino: str) -> dict | 
             logger.warning("yt-dlp no encontrado en PATH ni en venv")
             return None
 
+    cantidad = getattr(config, "YTDLP_RESULTADOS_BUSQUEDA", 5)
     queries_yt = [
-        f'ytsearch3:"{equipo1} vs {equipo2} mundial 2026 completo español"',
-        f'ytsearch3:"{equipo1} vs {equipo2} world cup 2026 full match spanish"',
-        f'ytsearch3:"{equipo1} {equipo2} FIFA World Cup 2026 full match"',
+        f'ytsearch{cantidad}:"{equipo1} vs {equipo2} mundial 2026 partido completo 720p"',
+        f'ytsearch{cantidad}:"{equipo1} vs {equipo2} world cup 2026 full match 720p"',
+        f'ytsearch{cantidad}:"{_traducir_equipo(equipo1)} vs {_traducir_equipo(equipo2)} FIFA World Cup 2026 full match 720p"',
     ]
 
-    nombre_archivo = nombre_base_canonico_partido({
-        "equipo1": equipo1,
-        "equipo2": equipo2,
-    })
+    candidatos = []
 
     for query in queries_yt:
         try:
             logger.debug(f"[yt-dlp] Buscando: {query}")
-            import os
-            ruta_salida = os.path.join(directorio_destino, f"{nombre_archivo}.%(ext)s")
 
             comando = [
                 ytdlp_path,
-                "--match-filter", f"duration > {config.YTDLP_DURACION_MINIMA}",
-                "-f", config.YTDLP_FORMATO,
-                "-o", ruta_salida,
+                "--dump-json",
+                "--skip-download",
                 "--no-playlist",
                 "--socket-timeout", "30",
                 query
             ]
 
-            resultado = subprocess.run(
-                comando, capture_output=True, text=True, timeout=600
-            )
-
-            if resultado.returncode == 0:
-                logger.info(f"[yt-dlp] Descarga exitosa: {nombre_archivo}")
-                return {
-                    "titulo": nombre_archivo,
-                    "fuente": "yt-dlp",
-                    "ruta": directorio_destino,
-                }
-            else:
+            resultado = subprocess.run(comando, capture_output=True, text=True, timeout=180)
+            if resultado.returncode != 0:
                 logger.debug(f"[yt-dlp] No encontró resultado para: {query}")
+                continue
+
+            for linea in resultado.stdout.splitlines():
+                try:
+                    info = json.loads(linea)
+                except json.JSONDecodeError:
+                    continue
+
+                valido, razon = _validar_candidato_ytdlp(info, equipo1, equipo2)
+                titulo = info.get("title") or "-"
+                if not valido:
+                    logger.debug(f"[yt-dlp] Rechazado: {titulo} ({razon})")
+                    continue
+                candidatos.append(info)
 
         except subprocess.TimeoutExpired:
             logger.warning(f"[yt-dlp] Timeout buscando: {query}")
         except Exception as e:
             logger.debug(f"[yt-dlp] Error: {e}")
+
+    if not candidatos:
+        logger.info("[yt-dlp] Sin candidatos confiables; no se descarga fallback")
+        return None
+
+    candidatos.sort(
+        key=lambda info: (
+            _altura_metadata(info) or 0,
+            -abs(float(info.get("duration", 0)) - 7200),
+        ),
+        reverse=True,
+    )
+    elegido = candidatos[0]
+    url = elegido.get("webpage_url") or elegido.get("original_url") or elegido.get("url")
+    if not url:
+        logger.info("[yt-dlp] Candidato sin URL util; no se descarga fallback")
+        return None
+
+    idioma = detectar_idioma(elegido.get("title"))
+    nombre_archivo = nombre_base_canonico_partido({
+        "equipo1": equipo1,
+        "equipo2": equipo2,
+    }, idioma)
+    ruta_salida = os.path.join(directorio_destino, f"{nombre_archivo}.%(ext)s")
+    logger.info(
+        f"[yt-dlp] Candidato validado: {elegido.get('title')} "
+        f"({round((elegido.get('duration') or 0) / 60, 1)} min, "
+        f"{_altura_metadata(elegido)}p)"
+    )
+
+    comando_descarga = [
+        ytdlp_path,
+        "-f", config.YTDLP_FORMATO,
+        "-o", ruta_salida,
+        "--no-playlist",
+        "--socket-timeout", "30",
+        url,
+    ]
+
+    try:
+        resultado = subprocess.run(
+            comando_descarga,
+            capture_output=True,
+            text=True,
+            timeout=getattr(config, "YTDLP_TIMEOUT_SEGUNDOS", 7200),
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning("[yt-dlp] Timeout descargando candidato validado")
+        return None
+    except Exception as e:
+        logger.debug(f"[yt-dlp] Error descargando candidato validado: {e}")
+        return None
+
+    if resultado.returncode != 0:
+        logger.debug(resultado.stderr)
+        logger.info("[yt-dlp] Fallo la descarga del candidato validado")
+        return None
+
+    logger.info(f"[yt-dlp] Descarga validada exitosa: {nombre_archivo}")
+    return {
+        "titulo": elegido.get("title") or nombre_archivo,
+        "fuente": "yt-dlp",
+        "ruta": directorio_destino,
+        "url": url,
+        "idioma": idioma,
+        "yt_dlp_validado": True,
+        "yt_dlp_duracion": elegido.get("duration"),
+        "yt_dlp_altura": _altura_metadata(elegido),
+    }
 
     return None
 

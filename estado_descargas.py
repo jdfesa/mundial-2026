@@ -39,6 +39,9 @@ STATE_FIELDS = (
     "archivo_local_ultimo",
     "archivo_local_estado",
     "archivo_existe",
+    "archivo_valido",
+    "validacion_error",
+    "archivo_rechazado",
     "tamano_mb",
     "duracion_min",
     "resolucion",
@@ -236,6 +239,8 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
         estado_local = partido.get("archivo_local_estado")
         if descargado and estado_local:
             datos_archivo.append(f"local: {estado_local}")
+        if partido.get("validacion_error"):
+            datos_archivo.append(f"rechazado: {partido['validacion_error']}")
         descarga_estado = partido.get("descarga_estado")
         if descargado and descarga_estado and descarga_estado != "completa":
             progreso = partido.get("descarga_progreso")
@@ -244,7 +249,7 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
             else:
                 datos_archivo.append(f"descarga: {descarga_estado}")
         postproceso = partido.get("postproceso") or {}
-        if postproceso.get("estado"):
+        if postproceso.get("estado") and not partido.get("validacion_error"):
             datos_archivo.append(f"post: {postproceso['estado']} ({postproceso.get('motivo', '-')})")
         extra = f" | {' / '.join(datos_archivo)}" if datos_archivo else ""
         fecha = partido.get("fecha_hora_utc", "-")
