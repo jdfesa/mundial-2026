@@ -113,7 +113,41 @@ qBittorrent. Cuando el torrent trae una carpeta release con spam, el video princ
 aplana a la raiz del grupo con el nombre canonico. Para fuentes manuales o `yt-dlp`, el
 renombrado puede hacerse directamente sobre el archivo.
 
-No se recomprime por defecto. El postproceso queda como evaluacion registrada en estado:
+Despues de verificar el archivo local, el flujo puede generar una copia MP4 compatible con
+el reproductor del navegador. Esto esta pensado para que `index.html` funcione como una
+experiencia simple tipo YouTube en Chrome:
+
+- si el origen ya es MP4 con audio compatible, se usa tal cual;
+- si el origen trae video H.264 y audio no compatible para Chrome, por ejemplo AC3 en MKV,
+  se copia el video sin recomprimir y solo se convierte el audio a AAC;
+- si no hay espacio libre suficiente, queda `compatibilidad_web=pendiente` y se reintenta
+  en una corrida futura;
+- por defecto conserva el archivo original para no romper torrents que siguen seedeando.
+
+El comando manual para preparar la biblioteca existente sin buscar descargas nuevas es:
+
+```bash
+./run.sh --postprocesar-web
+```
+
+Variables relacionadas:
+
+```env
+WEB_COMPAT_POSTPROCESO=1
+WEB_COMPAT_AUDIO_BITRATE=192k
+WEB_COMPAT_AUDIO_CHANNELS=2
+WEB_COMPAT_MIN_FREE_GB=1.0
+WEB_COMPAT_CONSERVAR_ORIGINAL=1
+WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL=1
+```
+
+`WEB_COMPAT_CONSERVAR_ORIGINAL=0` elimina el origen despues de generar el MP4, pero puede
+dejar qBittorrent con archivos faltantes si el torrent seguia activo. Con
+`WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL=1`, el flujo intenta retirar primero el torrent de
+qBittorrent sin pedirle que borre archivos, y luego elimina solo el MKV original. Usalo solo
+si ya no necesitas seedear ese torrent.
+
+Ademas se conserva una evaluacion de tamano/resolucion:
 
 - hasta 5 GB y 720p o menos: `mantener_origen`;
 - mas de 5 GB o por encima de 720p: `revisar`.
@@ -134,6 +168,8 @@ Si qBittorrent esta corriendo y la Web API responde, tambien sincroniza torrents
   destino final por fase/grupo;
 - renombra el video principal al formato canonico en la raiz del grupo;
 - opcionalmente limpia auxiliares pequenos de spam (`.nfo`, `.txt`, `.url`);
+- genera MP4/AAC para el indice HTML cuando el audio del origen no es compatible con
+  navegador;
 - no mueve archivos con `shutil` mientras qBittorrent los administra.
 
 Esto se controla con:

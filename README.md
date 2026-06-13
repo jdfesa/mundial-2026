@@ -51,6 +51,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 │              ├── verificador_archivos.py                            │
 │              │       ├── idioma_utils.py                            │
 │              │       └── nombres_archivos.py                        │
+│              ├── postprocesador_web.py ──► MP4 + audio AAC para HTML │
 │              ├── reporte_diario.py                                  │
 │              ├── indice_biblioteca.py                               │
 │              └── ~/Desktop/Mundial_Partidos/                        │
@@ -70,7 +71,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 - Prioriza español, partido completo, 720p y tamaños razonables.
 - Mantiene historial en `estado_descargas.json`, independiente de archivos locales.
 - Si una descarga está en inglés queda `MEJORABLE`; si está en español queda `FINAL`.
-- No recomprime por defecto: registra si conviene mantener o revisar manualmente.
+- No recomprime video: si hace falta para Chrome, solo convierte audio a AAC en MP4.
 - `yt-dlp` existe solo como fallback tardío y validado.
 
 Detalle de reglas, idioma, historial, nombres, postproceso y reportes:
@@ -82,6 +83,7 @@ Detalle de reglas, idioma, historial, nombres, postproceso y reportes:
 
 - Python 3.10+
 - [qBittorrent](https://www.qbittorrent.org/) instalado
+- `ffmpeg`/`ffprobe` para metadata y MP4 compatible con navegador
 - Git (para clonar el repo)
 
 ### Paso a paso
@@ -158,6 +160,7 @@ probar qBittorrent y, en macOS, reinstalar la tarea automatica con launchd.
 ./run.sh --status          # Ver estado de descargas
 ./run.sh --forzar 3        # Forzar descarga del partido #3
 ./run.sh --solo-manuales   # Solo fuentes manuales
+./run.sh --postprocesar-web # Preparar MP4/AAC sin buscar descargas nuevas
 ./run.sh --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
 ```
 
