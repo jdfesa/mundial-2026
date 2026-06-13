@@ -21,3 +21,10 @@ test_output/
 
 # launchd plist con rutas absolutas personales
 com.mundial.descargador.plist
+
+# Utilidades personales de transferencia local
+setup_windows_ftp.bat
+datos_ftp_mundial.txt
+setup_windows_smb.bat
+datos_smb_mundial.txt
+partidos_para_windows/
