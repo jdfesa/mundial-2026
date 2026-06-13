@@ -12,6 +12,7 @@ Uso:
 """
 import json
 import os
+import re
 import sys
 import logging
 from datetime import datetime, timedelta, timezone
@@ -104,6 +105,13 @@ def crear_directorio_partido(partido: dict) -> str:
 
 # ─── Lógica Principal ────────────────────────────────────────────────────────
 
+def _extraer_torrent_hash(magnet: str | None) -> str | None:
+    match = re.search(r"btih:([a-fA-F0-9]+)", magnet or "")
+    if not match:
+        return None
+    return match.group(1).lower()
+
+
 def partido_listo_para_buscar(partido: dict) -> bool:
     """
     Verifica si un partido está listo para buscar (ya terminó + tiempo de espera).
@@ -174,9 +182,19 @@ def registrar_descarga(partido: dict, resultado: dict, ruta: str | None = None) 
     partido["descargado"] = True
     partido.setdefault("descargado_en", ahora)
     partido["ultima_descarga_en"] = ahora
+    partido.setdefault("descarga_iniciada_en", ahora)
+    partido["revisar_descarga_despues_de"] = (
+        datetime.now(timezone.utc)
+        + timedelta(minutes=getattr(config, "DESCARGA_REVISAR_DESPUES_MINUTOS", 60))
+    ).isoformat()
+    partido.setdefault("descarga_estado", "iniciada")
+    partido.setdefault("descarga_progreso", 0)
     partido["archivo"] = titulo
     partido["proveedor"] = resultado.get("fuente")
     partido["ruta"] = ruta or resultado.get("ruta")
+    torrent_hash = resultado.get("torrent_hash") or _extraer_torrent_hash(resultado.get("magnet"))
+    if torrent_hash:
+        partido["torrent_hash"] = torrent_hash
     partido["idioma"] = idioma
     partido["estado_final"] = idioma_es_final(idioma)
     partido["necesita_mejora"] = not partido["estado_final"]
@@ -290,7 +308,7 @@ def procesar_partido(partido: dict, dry_run: bool = False, solo_manuales: bool =
     resultado = obtener_mejor_resultado(equipo1, equipo2)
 
     if resultado:
-        resultado["idioma"] = detectar_idioma(resultado.get("titulo"))
+        resultado["idioma"] = resultado.get("idioma") or detectar_idioma(resultado.get("titulo"))
         logger.info(f"  ✅ Encontrado: '{resultado['titulo']}'")
         logger.info(f"     Fuente: {resultado['fuente']} | "
                     f"Seeders: {resultado['seeders']} | "

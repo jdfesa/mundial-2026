@@ -19,6 +19,12 @@ STATE_FIELDS = (
     "descargado",
     "descargado_en",
     "ultima_descarga_en",
+    "descarga_iniciada_en",
+    "revisar_descarga_despues_de",
+    "descarga_estado",
+    "descarga_progreso",
+    "descarga_actualizada_en",
+    "torrent_hash",
     "intentos",
     "ultimo_intento",
     "archivo",
@@ -230,6 +236,13 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
         estado_local = partido.get("archivo_local_estado")
         if descargado and estado_local:
             datos_archivo.append(f"local: {estado_local}")
+        descarga_estado = partido.get("descarga_estado")
+        if descargado and descarga_estado and descarga_estado != "completa":
+            progreso = partido.get("descarga_progreso")
+            if progreso is not None:
+                datos_archivo.append(f"descarga: {descarga_estado} {progreso}%")
+            else:
+                datos_archivo.append(f"descarga: {descarga_estado}")
         postproceso = partido.get("postproceso") or {}
         if postproceso.get("estado"):
             datos_archivo.append(f"post: {postproceso['estado']} ({postproceso.get('motivo', '-')})")

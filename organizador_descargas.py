@@ -34,6 +34,11 @@ def _score_torrent_partido(torrent: dict, partido: dict) -> int:
     ]))
     score = 0
 
+    torrent_hash = normalizar_texto(torrent.get("hash"))
+    partido_hash = normalizar_texto(partido.get("torrent_hash"))
+    if torrent_hash and partido_hash and torrent_hash == partido_hash:
+        score += 200
+
     archivo = normalizar_texto(partido.get("archivo"))
     if archivo and archivo in texto:
         score += 120
@@ -50,6 +55,17 @@ def _score_torrent_partido(torrent: dict, partido: dict) -> int:
         score += 10
 
     return score
+
+
+def _actualizar_estado_torrent(partido: dict, torrent: dict) -> None:
+    ahora = datetime.now(timezone.utc).isoformat()
+    if torrent.get("hash"):
+        partido["torrent_hash"] = torrent.get("hash")
+    partido["descarga_estado"] = "completa" if torrent.get("completado") else torrent.get("estado", "activa")
+    partido["descarga_progreso"] = torrent.get("progreso")
+    partido["descarga_actualizada_en"] = ahora
+    if torrent.get("ruta"):
+        partido["ruta"] = torrent.get("ruta")
 
 
 def _mismo_directorio(actual: str | None, destino: str) -> bool:
@@ -72,7 +88,7 @@ def sincronizar_descargas_completadas(
     En modo automatico puede abrir qBittorrent si no esta corriendo. En --status
     se deja desactivado para no abrir aplicaciones por sorpresa.
     """
-    resumen = {"candidatos": 0, "movidos": 0, "omitidos": 0}
+    resumen = {"candidatos": 0, "movidos": 0, "omitidos": 0, "actualizados": 0}
     if not getattr(config, "QBIT_MOVER_COMPLETADOS", True):
         return resumen
 
@@ -82,12 +98,11 @@ def sincronizar_descargas_completadas(
         incluir_todos=getattr(config, "QBIT_BUSCAR_TODAS_LAS_DESCARGAS", True),
         iniciar_si_no_corre=iniciar_qbit_si_no_corre,
     )
-    completos = [t for t in torrents if t.get("completado")]
-    if not completos:
-        logger.info("No hay torrents completos para sincronizar")
+    if not torrents:
+        logger.info("No hay torrents para sincronizar")
         return resumen
 
-    for torrent in completos:
+    for torrent in torrents:
         mejor = None
         mejor_score = 0
         for partido in calendario:
@@ -100,11 +115,19 @@ def sincronizar_descargas_completadas(
             resumen["omitidos"] += 1
             continue
 
+        _actualizar_estado_torrent(mejor, torrent)
+        resumen["actualizados"] += 1
+
+        if not torrent.get("completado"):
+            continue
+
         destino = directorio_partido(mejor)
         resumen["candidatos"] += 1
 
         if _mismo_directorio(torrent.get("ruta"), destino):
             mejor["ruta"] = destino
+            mejor["descarga_estado"] = "completa"
+            mejor["descarga_progreso"] = 100
             mejor["movido_a_destino"] = True
             resumen["omitidos"] += 1
             continue
@@ -118,6 +141,8 @@ def sincronizar_descargas_completadas(
 
         if mover_torrent(torrent.get("hash", ""), destino):
             mejor["ruta"] = destino
+            mejor["descarga_estado"] = "completa"
+            mejor["descarga_progreso"] = 100
             mejor["movido_a_destino"] = True
             mejor["ultimo_movimiento"] = datetime.now(timezone.utc).isoformat()
             if not mejor.get("archivo"):
