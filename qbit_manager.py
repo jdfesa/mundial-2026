@@ -288,6 +288,69 @@ def _torrent_attr(torrent, nombre: str, default=None):
     return getattr(torrent, nombre, default)
 
 
+def _extension_video(ruta_relativa: str) -> bool:
+    extensiones = tuple(e.lower() for e in getattr(config, "EXTENSIONES_VIDEO", []))
+    return Path(ruta_relativa).suffix.lower() in extensiones
+
+
+def _extension_auxiliar_limpiable(ruta_relativa: str) -> bool:
+    extensiones = getattr(config, "QBIT_EXTENSIONES_AUXILIARES", {".nfo", ".txt", ".url"})
+    return Path(ruta_relativa).suffix.lower() in extensiones
+
+
+def _tamano_archivo_torrent(archivo) -> int:
+    valor = _torrent_attr(archivo, "size", 0)
+    try:
+        return int(valor or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _renombrar_archivo_relativo(cliente, torrent_hash: str, old_path: str, new_path: str) -> bool:
+    """Renombra un archivo interno del torrent usando rutas relativas qBittorrent."""
+    try:
+        cliente.torrents_rename_file(
+            torrent_hash=torrent_hash,
+            old_path=old_path,
+            new_path=new_path,
+        )
+    except TypeError:
+        cliente.torrents_renameFile(
+            torrent_hash=torrent_hash,
+            old_path=old_path,
+            new_path=new_path,
+        )
+    return True
+
+
+def _path_seguro_en_raiz(path: Path, raiz: Path) -> bool:
+    try:
+        path_resuelto = path.expanduser().resolve()
+        raiz_resuelta = raiz.expanduser().resolve()
+    except OSError:
+        return False
+    try:
+        return path_resuelto.is_relative_to(raiz_resuelta)
+    except AttributeError:
+        return str(path_resuelto).startswith(str(raiz_resuelta))
+
+
+def _limpiar_directorios_vacios(path: Path, raiz: Path) -> None:
+    """Borra carpetas vacias hasta llegar a la raiz indicada."""
+    try:
+        raiz_resuelta = raiz.expanduser().resolve()
+    except OSError:
+        return
+
+    actual = path
+    while actual != raiz_resuelta and _path_seguro_en_raiz(actual, raiz_resuelta):
+        try:
+            actual.rmdir()
+        except OSError:
+            return
+        actual = actual.parent
+
+
 def listar_torrents(incluir_todos: bool = False, iniciar_si_no_corre: bool = False) -> list[dict]:
     """Lista torrents con metadata suficiente para sincronizar carpetas."""
     cliente = obtener_cliente(abrir_si_no_corre=iniciar_si_no_corre)
@@ -417,28 +480,188 @@ def renombrar_archivo_torrent(path_actual: str, nombre_nuevo: str) -> str | None
                     except OSError:
                         continue
 
-                    nueva_relativa = str(Path(ruta_relativa).with_name(nombre_nuevo))
-                    try:
-                        cliente.torrents_rename_file(
-                            torrent_hash=torrent_hash,
-                            old_path=ruta_relativa,
-                            new_path=nueva_relativa,
-                        )
-                    except TypeError:
-                        cliente.torrents_renameFile(
-                            torrent_hash=torrent_hash,
-                            old_path=ruta_relativa,
-                            new_path=nueva_relativa,
-                        )
+                    nueva_relativa = nombre_nuevo
+                    _renombrar_archivo_relativo(
+                        cliente,
+                        torrent_hash,
+                        ruta_relativa,
+                        nueva_relativa,
+                    )
                     logger.info(
                         "Archivo renombrado por qBittorrent: "
-                        f"{Path(path_actual).name} -> {nombre_nuevo}"
+                        f"{ruta_relativa} -> {nueva_relativa}"
                     )
+                    save_path = torrent.get("ruta")
+                    if save_path:
+                        return str(Path(save_path) / nueva_relativa)
                     return str(objetivo.with_name(nombre_nuevo))
     except Exception as e:
         logger.debug(f"No se pudo renombrar via qBittorrent: {e}")
 
     return None
+
+
+def normalizar_video_principal_torrent(
+    torrent: dict,
+    nombre_base_canonico: str,
+    carpeta_destino: str | None = None,
+) -> dict | None:
+    """
+    Mueve/renombra el video principal de un torrent a la raiz del destino.
+
+    qBittorrent puede tener un nombre de torrent limpio, pero conservar dentro
+    una carpeta release con spam. Esta funcion cambia la ruta interna del video
+    principal de, por ejemplo, `Release/FIFA World Cup.mkv` a
+    `004_estados_unidos_vs_paraguay_en.mkv`.
+    """
+    torrent_hash = torrent.get("hash")
+    if not torrent_hash or not nombre_base_canonico:
+        return None
+
+    cliente = obtener_cliente(abrir_si_no_corre=False)
+    if not cliente:
+        return None
+
+    try:
+        archivos = cliente.torrents_files(torrent_hash=torrent_hash)
+    except Exception as e:
+        logger.debug(f"No se pudieron listar archivos del torrent {torrent_hash}: {e}")
+        return None
+
+    videos = [
+        archivo for archivo in archivos
+        if _extension_video(_torrent_attr(archivo, "name", ""))
+    ]
+    if not videos:
+        return None
+
+    video = max(videos, key=_tamano_archivo_torrent)
+    ruta_relativa = _torrent_attr(video, "name", "")
+    if not ruta_relativa:
+        return None
+
+    extension = Path(ruta_relativa).suffix.lower()
+    nombre_nuevo = f"{nombre_base_canonico}{extension}"
+    nueva_relativa = nombre_nuevo
+    destino_base = carpeta_destino or torrent.get("ruta") or config.DIRECTORIO_BASE
+    ruta_final = str(Path(destino_base) / nueva_relativa)
+
+    info = {
+        "nombre_canonico": nombre_nuevo,
+        "archivo_local": ruta_final,
+        "archivo_local_ultimo": ruta_final,
+        "archivo_relativo_torrent": nueva_relativa,
+    }
+
+    if ruta_relativa == nueva_relativa:
+        info.update({
+            "renombrado": False,
+            "metodo_renombrado": "qbittorrent",
+        })
+        return info
+
+    try:
+        _renombrar_archivo_relativo(
+            cliente,
+            torrent_hash,
+            ruta_relativa,
+            nueva_relativa,
+        )
+    except Exception as e:
+        logger.warning(
+            "No se pudo normalizar archivo interno de qBittorrent "
+            f"{ruta_relativa} -> {nueva_relativa}: {e}"
+        )
+        return None
+
+    logger.info(
+        "Archivo de video normalizado por qBittorrent: "
+        f"{ruta_relativa} -> {nueva_relativa}"
+    )
+    info.update({
+        "renombrado": True,
+        "renombrado_en": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "archivo_nombre_anterior": Path(ruta_relativa).name,
+        "archivo_relativo_anterior": ruta_relativa,
+        "metodo_renombrado": "qbittorrent_flatten",
+    })
+    return info
+
+
+def limpiar_auxiliares_torrent(
+    torrent: dict,
+    carpeta_destino: str | None = None,
+) -> dict:
+    """
+    Marca como no descargables y borra auxiliares pequenos de spam.
+
+    Solo limpia extensiones declaradas en QBIT_EXTENSIONES_AUXILIARES. No toca
+    subtitulos ni archivos desconocidos para no perder material util.
+    """
+    resumen = {"auxiliares_limpiados": 0, "auxiliares_omitidos": 0}
+    if not getattr(config, "QBIT_LIMPIAR_AUXILIARES", True):
+        return resumen
+
+    torrent_hash = torrent.get("hash")
+    if not torrent_hash:
+        return resumen
+
+    cliente = obtener_cliente(abrir_si_no_corre=False)
+    if not cliente:
+        return resumen
+
+    try:
+        archivos = cliente.torrents_files(torrent_hash=torrent_hash)
+    except Exception as e:
+        logger.debug(f"No se pudieron listar auxiliares del torrent {torrent_hash}: {e}")
+        return resumen
+
+    auxiliares = []
+    for archivo in archivos:
+        ruta_relativa = _torrent_attr(archivo, "name", "")
+        if not ruta_relativa or _extension_video(ruta_relativa):
+            continue
+        if not _extension_auxiliar_limpiable(ruta_relativa):
+            resumen["auxiliares_omitidos"] += 1
+            continue
+        auxiliares.append(archivo)
+
+    if not auxiliares:
+        return resumen
+
+    ids = [
+        _torrent_attr(archivo, "index", _torrent_attr(archivo, "id"))
+        for archivo in auxiliares
+    ]
+    ids = [i for i in ids if i is not None]
+    if ids:
+        try:
+            cliente.torrents_file_priority(
+                torrent_hash=torrent_hash,
+                file_ids=ids,
+                priority=0,
+            )
+        except Exception as e:
+            logger.debug(f"No se pudo bajar prioridad de auxiliares {torrent_hash}: {e}")
+
+    raiz = Path(carpeta_destino or torrent.get("ruta") or config.DIRECTORIO_BASE)
+    for archivo in auxiliares:
+        ruta_relativa = _torrent_attr(archivo, "name", "")
+        path = raiz / ruta_relativa
+        if not _path_seguro_en_raiz(path, raiz):
+            resumen["auxiliares_omitidos"] += 1
+            continue
+        try:
+            if path.exists() and path.is_file():
+                path.unlink()
+                resumen["auxiliares_limpiados"] += 1
+                logger.info(f"Auxiliar de torrent eliminado: {path.name}")
+                _limpiar_directorios_vacios(path.parent, raiz)
+        except OSError as e:
+            resumen["auxiliares_omitidos"] += 1
+            logger.debug(f"No se pudo eliminar auxiliar {path}: {e}")
+
+    return resumen
 
 
 def listar_descargas_mundial(iniciar_si_no_corre: bool = False) -> list:
