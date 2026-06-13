@@ -225,6 +225,9 @@ cp fuentes_manuales.example.json fuentes_manuales.json
 # 5. Editar fuentes_torrent.json con mirrors funcionales
 ```
 
+Los archivos locales ignorados por git estan explicados en
+[`docs/archivos-locales.md`](docs/archivos-locales.md).
+
 ### Setup automático (macOS)
 
 ```bash
@@ -244,70 +247,15 @@ install_windows_task.bat
 
 ## Configuración
 
-### `.env`
+El proyecto usa tres archivos locales principales:
 
-Archivo con datos locales (no se sube al repo):
+- `.env`: rutas, qBittorrent, Groq opcional y parametros de fallback.
+- `fuentes_torrent.json`: mirrors reales de indexadores.
+- `fuentes_manuales.json`: URLs especificas que tengas permiso de descargar.
 
-```env
-MUNDIAL_DIRECTORIO_BASE=~/Desktop/Mundial_Partidos
-QBIT_HOST=127.0.0.1
-QBIT_PORT=8080
-QBIT_USER=admin
-QBIT_PASS=adminadmin
-GROQ_API_KEY=tu_api_key_local
-GROQ_HABILITADO=1
-GROQ_MODEL=openai/gpt-oss-20b
-```
-
-### `fuentes_torrent.json`
-
-Archivo con los indexadores y sus mirrors (no se sube al repo):
-
-```json
-{
-  "indexadores": [
-    {
-      "nombre": "1337x",
-      "habilitado": true,
-      "tipo": "scraper"
-    },
-    {
-      "nombre": "piratebay",
-      "habilitado": true,
-      "tipo": "api",
-      "mirrors": [
-        "https://tu-mirror-1.com",
-        "https://tu-mirror-2.com/api"
-      ]
-    }
-  ]
-}
-```
-
-Podés agregar más indexadores siguiendo el mismo formato. Si uno no responde, pasa al
-siguiente automáticamente.
-
-### `fuentes_manuales.json`
-
-Para agregar URLs específicas de partidos (replays oficiales, grabaciones propias, etc.):
-
-```json
-{
-  "fuentes": [
-    {
-      "id": 3,
-      "equipo1": "Canada",
-      "equipo2": "Bosnia-Herzegovina",
-      "url": "https://example.com/replay.mp4",
-      "titulo": "Canada_vs_Bosnia_2026_1080p_es",
-      "idioma": "es"
-    }
-  ]
-}
-```
-
-Las fuentes manuales se intentan primero. Si no hay una para el partido, el flujo normal
-sigue funcionando.
+Los templates versionados son `.env.example`, `fuentes_torrent.example.json` y
+`fuentes_manuales.example.json`. Para ver que archivos se generan solos y por que no se
+suben, lee [`docs/archivos-locales.md`](docs/archivos-locales.md).
 
 ## Uso
 
@@ -396,6 +344,7 @@ con `--idioma es`, queda como `FINAL`.
 | `.env.example` | ✅ | Template para configuración local |
 | `fuentes_torrent.example.json` | ✅ | Template para indexadores |
 | `fuentes_manuales.example.json` | ✅ | Template para fuentes manuales |
+| `docs/archivos-locales.md` | ✅ | Guía de archivos ignorados, generados y locales |
 | `setup.sh` | ✅ | Setup automático macOS |
 | `menu_macos.sh` | ✅ | Menú interactivo para macOS |
 | `run_macos.sh` | ✅ | Ejecutor portable macOS |
@@ -409,6 +358,8 @@ con `--idioma es`, queda como `FINAL`.
 | `estado_partidos.txt` | ❌ | Resumen legible de estado, idioma y archivo |
 | `reporte_diario.txt` | ❌ | Reporte diario generado |
 | `mundial.log` | ❌ | Logs de ejecución |
+
+Detalle de estos archivos: [`docs/archivos-locales.md`](docs/archivos-locales.md).
 
 ## qBittorrent
 
