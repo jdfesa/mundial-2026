@@ -106,6 +106,26 @@ PERMITIR_UPGRADE_IDIOMA = True
 ZONA_HORARIA_REPORTE = os.getenv("MUNDIAL_ZONA_HORARIA", "America/Argentina/Buenos_Aires")
 EXTENSIONES_VIDEO = [".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts", ".webm"]
 
+# ─── Compatibilidad Web / HTML5 ─────────────────────────────────────────────
+# Para que el indice HTML se comporte como una experiencia tipo YouTube, los
+# videos se preparan como MP4 con video H.264 copiado y audio AAC. No se
+# recodifica el video salvo que se cambie explicitamente la logica.
+WEB_COMPAT_POSTPROCESO = (
+    os.getenv("WEB_COMPAT_POSTPROCESO", "1") not in {"0", "false", "False"}
+)
+WEB_COMPAT_AUDIO_CODECS = {"aac", "mp3"}
+WEB_COMPAT_VIDEO_COPY_CODECS = {"h264"}
+WEB_COMPAT_AUDIO_BITRATE = os.getenv("WEB_COMPAT_AUDIO_BITRATE", "192k")
+WEB_COMPAT_AUDIO_CHANNELS = int(os.getenv("WEB_COMPAT_AUDIO_CHANNELS", "2"))
+WEB_COMPAT_TIMEOUT_SEGUNDOS = int(os.getenv("WEB_COMPAT_TIMEOUT_SEGUNDOS", "7200"))
+WEB_COMPAT_MIN_FREE_GB = float(os.getenv("WEB_COMPAT_MIN_FREE_GB", "1.0"))
+WEB_COMPAT_CONSERVAR_ORIGINAL = (
+    os.getenv("WEB_COMPAT_CONSERVAR_ORIGINAL", "1") not in {"0", "false", "False"}
+)
+WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL = (
+    os.getenv("WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL", "1") not in {"0", "false", "False"}
+)
+
 # Palabras clave para buscar partidos completos (no resúmenes)
 KEYWORDS_POSITIVAS = [
     "completo", "full match", "full game", "partido completo",
