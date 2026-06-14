@@ -462,6 +462,7 @@ def _retirar_torrent_original(partido: dict) -> tuple[bool, str | None]:
     if not torrent_hash:
         return True, None
     if not getattr(config, "WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL", True):
+        partido["torrent_retiro_omitido_por_config"] = True
         return False, "retiro_torrent_deshabilitado"
 
     try:
@@ -473,6 +474,7 @@ def _retirar_torrent_original(partido: dict) -> tuple[bool, str | None]:
         partido["torrent_retirado_postproceso"] = True
         partido["torrent_retirado_postproceso_en"] = datetime.now(timezone.utc).isoformat()
         return True, None
+    partido["torrent_retiro_error"] = "no_se_pudo_retirar_torrent"
     return False, "no_se_pudo_retirar_torrent"
 
 
@@ -659,6 +661,14 @@ def postprocesar_partido_web(partido: dict, dry_run: bool = False) -> str:
     if not conservar_original:
         retirado, motivo_retiro = _retirar_torrent_original(partido)
         if not retirado:
+            if getattr(config, "WEB_COMPAT_ELIMINAR_ORIGINAL_SIN_QBIT", False):
+                partido["archivo_origen_eliminado_advertencia"] = motivo_retiro
+                logger.warning(
+                    "No se pudo retirar el torrent de qBittorrent, pero se eliminaran "
+                    "origenes pesados porque WEB_COMPAT_ELIMINAR_ORIGINAL_SIN_QBIT=1"
+                )
+                _eliminar_origenes(partido, origenes, destino)
+                return "convertido"
             partido["archivo_origen_eliminado_error"] = motivo_retiro
             partido["compatibilidad_web"] = _estado(
                 "compatible_origen_conservado",
