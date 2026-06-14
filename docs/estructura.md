@@ -22,43 +22,51 @@ README mantiene el mapa visual corto; aca queda el inventario mas completo.
 
 La ruta exacta depende de `MUNDIAL_DIRECTORIO_BASE` en `.env`.
 
-## Archivos Versionados
+## Raiz Del Repo
+
+`run.sh` es el unico comando normal de operacion desde la raiz. Carga el entorno Python,
+prepara el `PYTHONPATH` modular y delega en `scripts/00_orquestador/descargar_partidos.py`.
+
+Tambien viven en la raiz los archivos de configuracion versionados, templates y datos base:
 
 | Archivo | Descripcion |
 |---------|-------------|
-| `descargar_partidos.py` | Script principal, coordinador. |
-| `buscador_torrents.py` | Fachada del buscador y ranking final. |
-| `busqueda_reglas.py` | Queries, scoring y validaciones compartidas. |
-| `fuentes_torrent.py` | Scrapers/APIs de indexadores torrent. |
-| `fallback_ytdlp.py` | Fallback tardio y validado con yt-dlp. |
-| `groq_asistente.py` | Asistente opcional para queries y clasificacion. |
-| `qbit_manager.py` | Integracion con qBittorrent. |
-| `auditor_biblioteca.py` | Detecta y sanea inconsistencias de rutas, IDs y carpetas. |
-| `notificador.py` | Notificaciones del sistema cuando aplica. |
-| `config.py` | Configuracion centralizada; lee `.env`. |
-| `estado_descargas.py` | Estado persistente separado del calendario. |
-| `estado_partido.py` | Helpers para interpretar descarga completa/en progreso. |
-| `idioma_utils.py` | Deteccion y clasificacion de idioma. |
-| `limpieza_idiomas.py` | Purga variantes `_en` cuando ya existe `_es` final. |
-| `marcadores_borrado.py` | Crea/lee marcadores `*_BORRADO.txt` para videos transferidos. |
-| `nombres_archivos.py` | Nombres canonicos de archivos descargados. |
-| `fuentes_manuales.py` | Logica para fuentes declaradas por el usuario. |
-| `organizador_descargas.py` | Mueve torrents completos a la carpeta final. |
-| `verificador_archivos.py` | Verifica archivos locales y metadata con ffprobe. |
-| `postprocesador_web.py` | Genera MP4 web; remux o transcode 720p segun tamano/resolucion. |
-| `indice_biblioteca.py` | Genera indice HTML y playlist M3U. |
-| `reporte_diario.py` | Genera resumen diario de partidos y mejoras. |
+| `run.sh` | Orquestador normal del flujo completo. |
 | `calendario_mundial_2026.json` | Calendario base de 104 partidos con fechas UTC. |
 | `requirements.txt` | Dependencias Python. |
 | `.env.example` | Template para configuracion local. |
 | `fuentes_torrent.example.json` | Template para indexadores. |
 | `fuentes_manuales.example.json` | Template para fuentes manuales. |
-| `run.sh` | Ejecutor portable Unix, macOS/Linux manual. |
-| `menu.sh` | Menu interactivo Unix, macOS/Linux manual. |
-| `run_windows.bat` | Ejecutor portable Windows. |
-| `setup.sh` | Setup automatico macOS. |
-| `install_macos_launchd.sh` | Instala tarea launchd. |
-| `install_windows_task.bat` | Instala tarea programada Windows. |
+
+## Scripts Modulares
+
+Las carpetas estan numeradas segun el orden mental del flujo. El usuario no deberia tener
+que entrar aca para operar: `run.sh` orquesta todo.
+
+| Carpeta | Responsabilidad |
+|---------|-----------------|
+| `scripts/00_orquestador/` | Script principal `descargar_partidos.py`, CLI y orden del flujo. |
+| `scripts/00_config/` | Configuracion, nombres canonicos, idioma y helpers de estado puntual. |
+| `scripts/01_estado/` | Estado persistente y marcadores `*_BORRADO.txt`. |
+| `scripts/02_fuentes/` | Fuentes manuales, torrents, fallback yt-dlp, scoring y Groq opcional. |
+| `scripts/03_qbittorrent/` | Integracion con qBittorrent y organizacion de descargas completas. |
+| `scripts/04_verificacion/` | Auditoria, saneamiento, verificacion local y limpieza de idiomas. |
+| `scripts/05_postproceso/` | MP4 web, remux/transcode y limpieza de origenes pesados. |
+| `scripts/06_biblioteca/` | Indice HTML, assets web, playlist y reporte diario. |
+| `scripts/07_notificaciones/` | Notificaciones del sistema cuando aplica. |
+| `scripts/90_utilidades/` | Menus, instaladores y wrappers por plataforma. |
+| `scripts/bootstrap.py` | Registra las carpetas numeradas para imports internos. |
+
+## Utilidades Manuales
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `scripts/90_utilidades/menu.sh` | Menu interactivo Unix, macOS/Linux manual. |
+| `scripts/90_utilidades/setup.sh` | Setup automatico macOS. |
+| `scripts/90_utilidades/install_macos_launchd.sh` | Instala tarea launchd apuntando a `run.sh`. |
+| `scripts/90_utilidades/run_windows.bat` | Ejecutor portable Windows. |
+| `scripts/90_utilidades/install_windows_task.bat` | Instala tarea programada Windows. |
+| `scripts/90_utilidades/setup_windows_smb.bat` | Prepara una carpeta SMB en Windows para copiar partidos. |
 
 ## Documentacion
 

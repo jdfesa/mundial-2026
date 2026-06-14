@@ -36,26 +36,19 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  launchd / cron / Task Scheduler (cada 30 min)                      │
-│      └── descargar_partidos.py (orquestador)                        │
-│              ├── config.py + .env                                   │
+│      └── run.sh (unico orquestador normal en la raiz)               │
+│          └── scripts/00_orquestador/descargar_partidos.py           │
+│              ├── scripts/00_config/config.py + .env                 │
 │              ├── calendario_mundial_2026.json (104 partidos)        │
-│              ├── estado_descargas.py ──► estado_descargas.json      │
+│              ├── scripts/01_estado/estado_descargas.py              │
+│              │       ├── estado_descargas.json                      │
 │              │       └── historial sin depender de archivos locales │
 │              ├── ¿Partido terminó hace +3 horas? ──► buscar         │
-│              ├── buscador_torrents.py (fachada + ranking final)     │
-│              │       ├── busqueda_reglas.py                         │
-│              │       ├── fuentes_manuales.py + JSON manual          │
-│              │       ├── fuentes_torrent.py + JSON de mirrors       │
-│              │       ├── fallback_ytdlp.py                          │
-│              │       └── groq_asistente.py (opcional)               │
-│              ├── qbit_manager.py ──► qBittorrent Web API            │
-│              ├── organizador_descargas.py ──► mueve torrents 100%   │
-│              ├── verificador_archivos.py                            │
-│              │       ├── idioma_utils.py                            │
-│              │       └── nombres_archivos.py                        │
-│              ├── postprocesador_web.py ──► MP4 + audio AAC para HTML │
-│              ├── reporte_diario.py                                  │
-│              ├── indice_biblioteca.py                               │
+│              ├── scripts/02_fuentes/ ──► busqueda y ranking         │
+│              ├── scripts/03_qbittorrent/ ──► torrents 100%          │
+│              ├── scripts/04_verificacion/ ──► IDs, archivos, carpetas│
+│              ├── scripts/05_postproceso/ ──► MP4 + AAC para HTML    │
+│              ├── scripts/06_biblioteca/ ──► reporte e indice web    │
 │              └── ~/Desktop/Mundial_Partidos/                        │
 │                      ├── Fase_de_Grupos/Grupo_A/                    │
 │                      ├── Fase_de_Grupos/Grupo_B/                    │
@@ -117,8 +110,8 @@ El alcance por sistema operativo esta resumido en
 ### Setup automático (macOS)
 
 ```bash
-chmod +x setup.sh
-bash setup.sh
+chmod +x scripts/90_utilidades/setup.sh
+bash scripts/90_utilidades/setup.sh
 ```
 
 Esto crea el entorno, instala dependencias, genera las carpetas de destino e instala
@@ -127,8 +120,8 @@ la tarea de launchd para ejecución automática cada 30 minutos.
 ### Setup automático (Windows)
 
 ```bat
-run_windows.bat --dry-run
-install_windows_task.bat
+scripts\90_utilidades\run_windows.bat --dry-run
+scripts\90_utilidades\install_windows_task.bat
 ```
 
 ## Configuración
@@ -150,7 +143,7 @@ suben, lee [`docs/archivos-locales.md`](docs/archivos-locales.md).
 Uso recomendado con menu interactivo:
 
 ```bash
-./menu.sh
+./scripts/90_utilidades/menu.sh
 ```
 
 El menu permite ver estado, ejecutar, simular, forzar un partido, marcar descargas,
@@ -174,19 +167,22 @@ que ejecute `./run.sh`. Detalles: [`docs/plataformas.md`](docs/plataformas.md).
 ### Windows
 
 ```bat
-run_windows.bat --dry-run
-run_windows.bat --status
-run_windows.bat --forzar 3
-run_windows.bat --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
+scripts\90_utilidades\run_windows.bat --dry-run
+scripts\90_utilidades\run_windows.bat --status
+scripts\90_utilidades\run_windows.bat --forzar 3
+scripts\90_utilidades\run_windows.bat --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
 ```
 
-### Directo con Python
+### Directo con Python (diagnostico)
+
+El uso normal debe ser `./run.sh`. Para depurar un caso puntual, el orquestador Python vive
+en `scripts/00_orquestador/`.
 
 ```bash
-python descargar_partidos.py --status
-python descargar_partidos.py --dry-run
-python descargar_partidos.py --forzar 1
-python descargar_partidos.py --marcar-descargado 1 --idioma es --archivo "Mexico vs Sudafrica español"
+python scripts/00_orquestador/descargar_partidos.py --status
+python scripts/00_orquestador/descargar_partidos.py --dry-run
+python scripts/00_orquestador/descargar_partidos.py --forzar 1
+python scripts/00_orquestador/descargar_partidos.py --marcar-descargado 1 --idioma es --archivo "Mexico vs Sudafrica español"
 ```
 
 `--marcar-descargado` sirve para rectificar el estado cuando ya viste que un partido está

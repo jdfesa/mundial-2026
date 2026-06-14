@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-RUNNER="$SCRIPT_DIR/run.sh"
-PYTHON_BIN="$SCRIPT_DIR/venv/bin/python"
+UTIL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$UTIL_DIR/../.." && pwd)"
+RUNNER="$PROJECT_ROOT/run.sh"
+PYTHON_BIN="$PROJECT_ROOT/venv/bin/python"
+SCRIPTS_DIR="$PROJECT_ROOT/scripts"
 SISTEMA="$(uname -s)"
 
 if [ ! -x "$PYTHON_BIN" ]; then
   PYTHON_BIN="$(command -v python3)"
 fi
 
-cd "$SCRIPT_DIR"
+MUNDIAL_PYTHONPATH="$SCRIPTS_DIR"
+for dir in "$SCRIPTS_DIR"/[0-9][0-9]_*; do
+  if [ -d "$dir" ]; then
+    MUNDIAL_PYTHONPATH="$MUNDIAL_PYTHONPATH:$dir"
+  fi
+done
+export PYTHONPATH="$MUNDIAL_PYTHONPATH${PYTHONPATH:+:$PYTHONPATH}"
+
+cd "$PROJECT_ROOT"
 
 pausa() {
   printf "\nPresiona Enter para volver al menu..."
@@ -84,7 +94,7 @@ instalar_automatizacion() {
     printf "La instalacion automatica incluida es solo para macOS/launchd.\n"
     printf "En Linux conviene crear un cron o systemd timer que ejecute:\n"
     printf "  %s\n" "$RUNNER"
-    printf "En Windows usar install_windows_task.bat desde PowerShell/CMD.\n"
+    printf "En Windows usar scripts\\90_utilidades\\install_windows_task.bat desde PowerShell/CMD.\n"
     return
   fi
 
@@ -92,7 +102,7 @@ instalar_automatizacion() {
   read -r respuesta
   case "$respuesta" in
     s|S|si|SI)
-      "$SCRIPT_DIR/install_macos_launchd.sh"
+      "$UTIL_DIR/install_macos_launchd.sh"
       ;;
     *)
       printf "Cancelado.\n"
@@ -151,8 +161,8 @@ while true; do
       pausa
       ;;
     9)
-      if [ -f "$SCRIPT_DIR/reporte_diario.txt" ]; then
-        sed -n '1,120p' "$SCRIPT_DIR/reporte_diario.txt"
+      if [ -f "$PROJECT_ROOT/reporte_diario.txt" ]; then
+        sed -n '1,120p' "$PROJECT_ROOT/reporte_diario.txt"
       else
         printf "No existe reporte_diario.txt todavia. Ejecuta --status primero.\n"
       fi

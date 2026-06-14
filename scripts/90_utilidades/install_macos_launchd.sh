@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+UTIL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$UTIL_DIR/../.." && pwd)"
 LABEL="com.mundial.descargador"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 
 if [ "$(uname -s)" != "Darwin" ]; then
     echo "Este instalador usa launchd y solo aplica a macOS."
-    echo "En Linux crea un cron o systemd timer que ejecute: $SCRIPT_DIR/run.sh"
+    echo "En Linux crea un cron o systemd timer que ejecute: $PROJECT_ROOT/run.sh"
     exit 1
 fi
 
@@ -23,11 +24,11 @@ cat > "$PLIST" <<PLIST
 
     <key>ProgramArguments</key>
     <array>
-        <string>$SCRIPT_DIR/run.sh</string>
+        <string>$PROJECT_ROOT/run.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>$SCRIPT_DIR</string>
+    <string>$PROJECT_ROOT</string>
 
     <key>StartInterval</key>
     <integer>1800</integer>
@@ -36,14 +37,14 @@ cat > "$PLIST" <<PLIST
     <true/>
 
     <key>StandardOutPath</key>
-    <string>$SCRIPT_DIR/launchd_stdout.log</string>
+    <string>$PROJECT_ROOT/launchd_stdout.log</string>
     <key>StandardErrorPath</key>
-    <string>$SCRIPT_DIR/launchd_stderr.log</string>
+    <string>$PROJECT_ROOT/launchd_stderr.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$SCRIPT_DIR/venv/bin</string>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PROJECT_ROOT/venv/bin</string>
         <key>LANG</key>
         <string>es_AR.UTF-8</string>
     </dict>

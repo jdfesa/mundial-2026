@@ -5,11 +5,11 @@
 Script principal que coordina la búsqueda y descarga de partidos.
 
 Uso:
-    python descargar_partidos.py              # Ejecución normal
-    python descargar_partidos.py --dry-run    # Simular sin descargar
-    python descargar_partidos.py --status     # Ver estado de descargas
-    python descargar_partidos.py --forzar ID  # Forzar descarga de un partido por ID
-    python descargar_partidos.py --postprocesar-web  # Preparar MP4/AAC para HTML
+    ./run.sh              # Ejecución normal
+    ./run.sh --dry-run    # Simular sin descargar
+    ./run.sh --status     # Ver estado de descargas
+    ./run.sh --forzar ID  # Forzar descarga de un partido por ID
+    ./run.sh --postprocesar-web  # Preparar MP4/AAC para HTML
 """
 import json
 import os
@@ -17,6 +17,15 @@ import re
 import sys
 import logging
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
+from bootstrap import configurar_imports
+
+configurar_imports()
 
 import config
 from auditor_biblioteca import auditar_biblioteca, imprimir_auditoria, sanear_biblioteca

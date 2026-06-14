@@ -29,7 +29,7 @@ Luego edita:
 | `fuentes_manuales.json` | Copia manual de `fuentes_manuales.example.json` | Puede contener URLs privadas, temporales o propias del usuario. |
 | `estado_descargas.json` | Lo genera el script | Es el historial local que evita depender de archivos ya movidos o borrados. |
 | `estado_partidos.txt` | Lo genera el script | Es un resumen legible del estado actual. |
-| `reporte_diario.txt` | Lo genera `reporte_diario.py` | Cambia con cada ejecucion y cada calendario. |
+| `reporte_diario.txt` | Lo genera `scripts/06_biblioteca/reporte_diario.py` | Cambia con cada ejecucion y cada calendario. |
 | `mundial.log` | Lo genera el script | Contiene logs locales de ejecucion. |
 | `launchd_stdout.log` / `launchd_stderr.log` | Los genera launchd | Son logs locales de macOS. |
 | `run_stdout.log` / `run_stderr.log` | Los puede generar cron/systemd | Son logs locales en Linux si usas automatizacion propia. |

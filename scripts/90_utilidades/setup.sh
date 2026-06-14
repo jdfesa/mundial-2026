@@ -4,13 +4,15 @@
 # ═══════════════════════════════════════════════════════════════════════
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV_DIR="$SCRIPT_DIR/venv"
+UTIL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$UTIL_DIR/../.." && pwd)"
+VENV_DIR="$PROJECT_ROOT/venv"
+RUNNER="$PROJECT_ROOT/run.sh"
 
 if [ "$(uname -s)" != "Darwin" ]; then
     echo "Este setup automatico esta preparado para macOS/launchd."
     echo "En Linux instala dependencias con pip y ejecuta: ./run.sh --status"
-    echo "Para automatizar, crea un cron o systemd timer que ejecute: $SCRIPT_DIR/run.sh"
+    echo "Para automatizar, crea un cron o systemd timer que ejecute: $RUNNER"
     exit 1
 fi
 
@@ -33,7 +35,7 @@ source "$VENV_DIR/bin/activate"
 echo ""
 echo "📦 Instalando dependencias..."
 pip install --upgrade pip -q
-pip install -r "$SCRIPT_DIR/requirements.txt" -q
+pip install -r "$PROJECT_ROOT/requirements.txt" -q
 echo "   ✅ Dependencias instaladas"
 
 # 3. Crear estructura de directorios
@@ -62,7 +64,7 @@ echo "   ✅ Directorios creados en $DESTINO"
 # 4. Verificar calendario
 echo ""
 echo "📅 Verificando calendario..."
-PARTIDOS=$(python3 -c "import json; d=json.load(open('$SCRIPT_DIR/calendario_mundial_2026.json')); print(len(d))")
+PARTIDOS=$(python3 -c "import json; d=json.load(open('$PROJECT_ROOT/calendario_mundial_2026.json')); print(len(d))")
 echo "   ✅ Calendario cargado: $PARTIDOS partidos"
 
 # 5. Verificar qBittorrent
@@ -87,24 +89,24 @@ fi
 # 6. Instalar LaunchAgent
 echo ""
 echo "⏰ Instalando tarea programada (launchd)..."
-"$SCRIPT_DIR/install_macos_launchd.sh"
+"$UTIL_DIR/install_macos_launchd.sh"
 echo "   ✅ Tarea programada instalada"
 
 # 7. Test rápido
 echo ""
 echo "🧪 Ejecutando test rápido (dry-run)..."
-cd "$SCRIPT_DIR"
-"$VENV_DIR/bin/python" descargar_partidos.py --dry-run 2>&1 | head -20
+cd "$PROJECT_ROOT"
+"$RUNNER" --dry-run 2>&1 | head -20
 
 echo ""
 echo "═══════════════════════════════════════════════════════"
 echo "✅ ¡Setup completado!"
 echo ""
 echo "Comandos útiles:"
-echo "  Ver estado:        python descargar_partidos.py --status"
-echo "  Ejecutar manual:   python descargar_partidos.py"
-echo "  Simular:           python descargar_partidos.py --dry-run"
-echo "  Forzar partido:    python descargar_partidos.py --forzar 1"
+echo "  Ver estado:        ./run.sh --status"
+echo "  Ejecutar manual:   ./run.sh"
+echo "  Simular:           ./run.sh --dry-run"
+echo "  Forzar partido:    ./run.sh --forzar 1"
 echo ""
 echo "Los partidos se guardarán en: $DESTINO"
 echo "═══════════════════════════════════════════════════════"

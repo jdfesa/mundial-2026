@@ -7,7 +7,9 @@ Si no existe .env, usa valores por defecto razonables.
 import json
 import os
 
-DIRECTORIO_PROYECTO = os.path.dirname(os.path.abspath(__file__))
+DIRECTORIO_PROYECTO = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
 
 
 # ─── Loader de .env (sin dependencias externas) ─────────────────────────────

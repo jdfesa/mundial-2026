@@ -1,9 +1,9 @@
 @echo off
 setlocal
 
-set "SCRIPT_DIR=%~dp0"
+set "UTIL_DIR=%~dp0"
 set "TASK_NAME=Mundial2026Descargador"
-set "RUNNER=%SCRIPT_DIR%run_windows.bat"
+set "RUNNER=%UTIL_DIR%run_windows.bat"
 
 if not exist "%RUNNER%" (
   echo No se encontro %RUNNER%

@@ -16,9 +16,9 @@ Estado: probado en esta maquina.
 Funciona con:
 
 - `./run.sh` para ejecutar el script principal.
-- `./menu.sh` como menu interactivo.
-- `setup.sh` para setup automatico con `launchd`.
-- `install_macos_launchd.sh` para instalar o actualizar la tarea cada 30 minutos.
+- `./scripts/90_utilidades/menu.sh` como menu interactivo.
+- `scripts/90_utilidades/setup.sh` para setup automatico con `launchd`.
+- `scripts/90_utilidades/install_macos_launchd.sh` para instalar o actualizar la tarea cada 30 minutos.
 - qBittorrent Web UI en `127.0.0.1:8080`.
 
 Puntos a revisar:
@@ -34,9 +34,8 @@ Estado: no probado end-to-end en este repo, pero el nucleo deberia correr manual
 
 Deberia funcionar:
 
-- `python descargar_partidos.py --status`
 - `./run.sh --status`
-- `./menu.sh` para acciones manuales.
+- `./scripts/90_utilidades/menu.sh` para acciones manuales.
 - qBittorrent por Web API.
 - Apertura de magnet links con `xdg-open`, si el sistema lo tiene configurado.
 
@@ -44,7 +43,7 @@ No esta incluido:
 
 - Instalador `systemd`.
 - Instalador `cron`.
-- Setup automatico equivalente a `setup.sh`.
+- Setup automatico equivalente a `scripts/90_utilidades/setup.sh`.
 - Notificaciones nativas.
 
 Checklist para usarlo en Linux:
@@ -69,8 +68,8 @@ Estado: hay wrappers `.bat`, pero el flujo principal se viene probando desde mac
 
 Incluido:
 
-- `run_windows.bat`
-- `install_windows_task.bat`
+- `scripts\90_utilidades\run_windows.bat`
+- `scripts\90_utilidades\install_windows_task.bat`
 
 Checklist para usarlo en Windows:
 
@@ -80,12 +79,12 @@ Checklist para usarlo en Windows:
 4. Usar rutas compatibles con Windows en `MUNDIAL_DIRECTORIO_BASE`.
 5. Habilitar qBittorrent Web UI y revisar credenciales.
 6. Instalar `ffmpeg`/`ffprobe` si se quiere validar metadata.
-7. Probar `run_windows.bat --status` antes de instalar la tarea programada.
+7. Probar `scripts\90_utilidades\run_windows.bat --status` antes de instalar la tarea programada.
 8. Revisar permisos del Task Scheduler si la tarea no ve las mismas rutas que el usuario.
 
 ## Regla Practica
 
 - Para uso probado hoy: macOS.
-- Para Linux: usar `run.sh`/`menu.sh` manualmente y agregar cron/systemd si hace falta.
+- Para Linux: usar `run.sh` y `scripts/90_utilidades/menu.sh` manualmente y agregar cron/systemd si hace falta.
 - Para Windows: usar los `.bat` y revisar rutas/Task Scheduler.
 - Para cualquier sistema: qBittorrent Web UI es el punto de integracion mas importante.
