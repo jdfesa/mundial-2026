@@ -163,6 +163,8 @@ probar qBittorrent y, en macOS, reinstalar la tarea automatica con launchd.
 ./run.sh --forzar 3        # Forzar descarga del partido #3
 ./run.sh --solo-manuales   # Solo fuentes manuales
 ./run.sh --postprocesar-web # Preparar MP4/AAC sin buscar descargas nuevas
+./run.sh --auditar-biblioteca # Detectar rutas/IDs inconsistentes
+./run.sh --sanear-biblioteca --dry-run # Simular saneamiento local de rutas/estado
 ./run.sh --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
 ```
 

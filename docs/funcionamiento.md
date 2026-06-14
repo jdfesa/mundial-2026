@@ -92,6 +92,16 @@ La biblioteca local solo se usa como verificacion complementaria. Si moves o bor
 archivo de esta computadora despues de pasarlo a otra PC, el partido no vuelve a pendiente:
 queda como historico descargado en el estado persistente.
 
+Cuando el script detecta que un partido registrado ya no tiene video local, puede crear un
+marcador junto a la carpeta esperada:
+
+```text
+001_mexico_vs_sudafrica_en_BORRADO.txt
+```
+
+Ese marcador reserva el ID, evita redescargas automaticas y permite que la web muestre
+`Video no encontrado` en lugar de un link roto.
+
 En cada `--status` y al final de una ejecucion real, el script revisa la biblioteca local:
 
 - busca archivos de video en `DIRECTORIO_BASE`;
@@ -101,6 +111,7 @@ En cada `--status` y al final de una ejecucion real, el script revisa la bibliot
 - si ya no encuentra el video, conserva `archivo_local_ultimo` y marca
   `archivo_local_estado=movido_o_borrado`.
 - si qBittorrent informa progreso menor a 100%, no verifica ni postprocesa archivos parciales.
+- si existe o corresponde un marcador `*_BORRADO.txt`, lo respeta como historial local.
 
 Para leer duracion, resolucion e idioma de pistas de audio usa `ffprobe` si esta instalado.
 Si no esta, igual detecta existencia y tamano.
@@ -143,6 +154,17 @@ El comando manual para preparar la biblioteca existente sin buscar descargas nue
 ```bash
 ./run.sh --postprocesar-web
 ```
+
+Para auditar o sanear inconsistencias locales de carpetas/IDs:
+
+```bash
+./run.sh --auditar-biblioteca
+./run.sh --sanear-biblioteca --dry-run
+./run.sh --sanear-biblioteca
+```
+
+El saneamiento no toca descargas activas y esta pensado para casos obvios, por ejemplo un
+archivo `001_...` guardado en la carpeta de otro grupo o dos partidos apuntando al mismo MP4.
 
 Variables relacionadas:
 

@@ -33,12 +33,14 @@ La ruta exacta depende de `MUNDIAL_DIRECTORIO_BASE` en `.env`.
 | `fallback_ytdlp.py` | Fallback tardio y validado con yt-dlp. |
 | `groq_asistente.py` | Asistente opcional para queries y clasificacion. |
 | `qbit_manager.py` | Integracion con qBittorrent. |
+| `auditor_biblioteca.py` | Detecta y sanea inconsistencias de rutas, IDs y carpetas. |
 | `notificador.py` | Notificaciones del sistema cuando aplica. |
 | `config.py` | Configuracion centralizada; lee `.env`. |
 | `estado_descargas.py` | Estado persistente separado del calendario. |
 | `estado_partido.py` | Helpers para interpretar descarga completa/en progreso. |
 | `idioma_utils.py` | Deteccion y clasificacion de idioma. |
 | `limpieza_idiomas.py` | Purga variantes `_en` cuando ya existe `_es` final. |
+| `marcadores_borrado.py` | Crea/lee marcadores `*_BORRADO.txt` para videos transferidos. |
 | `nombres_archivos.py` | Nombres canonicos de archivos descargados. |
 | `fuentes_manuales.py` | Logica para fuentes declaradas por el usuario. |
 | `organizador_descargas.py` | Mueve torrents completos a la carpeta final. |
