@@ -1,18 +1,21 @@
 """
 Genera copias MP4 compatibles con navegador para la biblioteca HTML.
 
-El objetivo no es comprimir ni cambiar la calidad del video: se copia el stream
-de video y solo se convierte el audio cuando el codec no es compatible con
-Chrome/HTML5, por ejemplo AC3 dentro de MKV.
+El flujo normal copia el video cuando ya es razonable y solo convierte audio a
+AAC. Si el origen es pesado o supera la altura preferida, transcodifica a un
+MP4 H.264/AAC 720p/30fps para no conservar archivos enormes en la biblioteca.
 """
 import json
 import logging
+import re
 import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 import config
+from estado_partido import descarga_en_progreso
+from idioma_utils import normalizar_texto
 from nombres_archivos import nombre_canonico_partido
 
 logger = logging.getLogger("mundial")
@@ -93,6 +96,46 @@ def _archivo_compatible_web(path: Path, meta: dict | None = None) -> bool:
     return path.suffix.lower() == ".mp4" and _video_copiable(meta) and _audio_compatible(meta)
 
 
+def _tamano_total(paths: list[Path]) -> int:
+    total = 0
+    for path in paths:
+        try:
+            total += path.stat().st_size
+        except OSError:
+            pass
+    return total
+
+
+def _target_height() -> int:
+    return int(getattr(config, "WEB_COMPAT_TARGET_HEIGHT", getattr(config, "ALTURA_PREFERIDA", 720)))
+
+
+def _target_fps() -> int:
+    return int(getattr(config, "WEB_COMPAT_TARGET_FPS", 30))
+
+
+def _umbral_transcodificacion_bytes() -> int:
+    umbral_gb = float(
+        getattr(
+            config,
+            "WEB_COMPAT_TRANSCODE_UMBRAL_GB",
+            getattr(config, "POSTPROCESO_UMBRAL_GB", 5.0),
+        )
+    )
+    return int(umbral_gb * 1024**3)
+
+
+def _requiere_transcodificacion_pesada(origenes: list[Path], meta: dict) -> bool:
+    if not getattr(config, "WEB_COMPAT_TRANSCODE_PESADO", True):
+        return False
+    if _tamano_total(origenes) > _umbral_transcodificacion_bytes():
+        return True
+    try:
+        return int(meta.get("alto") or 0) > _target_height()
+    except (TypeError, ValueError):
+        return False
+
+
 def _ruta_existente(*rutas: str | None) -> Path | None:
     for ruta in rutas:
         if not ruta:
@@ -101,6 +144,96 @@ def _ruta_existente(*rutas: str | None) -> Path | None:
         if path.exists() and path.is_file():
             return path
     return None
+
+
+def _variantes_equipo(nombre: str | None) -> set[str]:
+    variantes = {normalizar_texto(nombre)}
+    try:
+        from busqueda_reglas import traducir_equipo
+
+        variantes.add(normalizar_texto(traducir_equipo(nombre or "")))
+    except Exception:
+        pass
+    return {v for v in variantes if v}
+
+
+def _score_path_partido(partido: dict, path: Path) -> int:
+    texto = normalizar_texto(str(path))
+    score = 0
+    if any(variante in texto for variante in _variantes_equipo(partido.get("equipo1"))):
+        score += 1
+    if any(variante in texto for variante in _variantes_equipo(partido.get("equipo2"))):
+        score += 1
+    return score
+
+
+def _orden_parte(path: Path) -> tuple[int, str]:
+    match = re.search(r"(?:part|pt|cd|disc)\s*0*(\d+)", path.stem.lower())
+    if match:
+        return int(match.group(1)), path.name.lower()
+    return 0, path.name.lower()
+
+
+def _origenes_filesystem(partido: dict, origen: Path) -> list[Path]:
+    base = Path(partido.get("ruta") or origen.parent)
+    if not base.exists():
+        return []
+    extensiones = tuple(ext.lower() for ext in getattr(config, "EXTENSIONES_VIDEO", []))
+    candidatos = []
+    for path in base.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in extensiones:
+            continue
+        if path.suffix.lower() != origen.suffix.lower():
+            continue
+        try:
+            if path.resolve() == origen.resolve() or _score_path_partido(partido, path) >= 2:
+                candidatos.append(path)
+        except OSError:
+            continue
+    candidatos = _unificar_paths(candidatos)
+    if len(candidatos) <= 1:
+        return []
+    return sorted(candidatos, key=_orden_parte)
+
+
+def _origenes_postproceso(partido: dict, origen: Path) -> list[Path]:
+    """
+    Devuelve los videos que componen el origen.
+
+    Si qBittorrent sigue teniendo el torrent, se usan sus archivos para cubrir
+    casos Part1/Part2. Si no, se procesa solamente la ruta conocida.
+    """
+    torrent_hash = partido.get("torrent_hash")
+    if torrent_hash:
+        try:
+            from qbit_manager import rutas_videos_torrent
+
+            rutas = rutas_videos_torrent(torrent_hash, partido.get("ruta"))
+        except Exception as e:
+            logger.debug(f"No se pudieron obtener partes del torrent: {e}")
+            rutas = []
+        origenes = [Path(ruta) for ruta in rutas if Path(ruta).exists()]
+        if origenes:
+            return origenes
+    origenes_fs = _origenes_filesystem(partido, origen)
+    if origenes_fs:
+        return origenes_fs
+    return [origen]
+
+
+def _unificar_paths(paths: list[Path]) -> list[Path]:
+    unicos = []
+    vistos = set()
+    for path in paths:
+        try:
+            key = str(path.expanduser().resolve())
+        except OSError:
+            key = str(path)
+        if key in vistos:
+            continue
+        vistos.add(key)
+        unicos.append(path)
+    return unicos
 
 
 def _destino_mp4(partido: dict, origen: Path) -> Path:
@@ -112,6 +245,20 @@ def _destino_mp4(partido: dict, origen: Path) -> Path:
     except OSError:
         pass
     return destino
+
+
+def _escape_concat_path(path: Path) -> str:
+    return str(path).replace("'", "'\\''")
+
+
+def _crear_archivo_concat(origenes: list[Path], destino: Path) -> Path | None:
+    if len(origenes) <= 1:
+        return None
+    lista = destino.with_name(f".{destino.stem}.concat.txt")
+    with open(lista, "w", encoding="utf-8") as f:
+        for origen in origenes:
+            f.write(f"file '{_escape_concat_path(origen)}'\n")
+    return lista
 
 
 def _estado(
@@ -192,7 +339,27 @@ def _espacio_suficiente(destino: Path, tamano_origen: int) -> tuple[bool, str | 
     return True, None
 
 
-def _convertir(origen: Path, destino: Path) -> tuple[bool, str | None]:
+def _filtro_video(meta: dict) -> str:
+    alto = meta.get("alto")
+    ancho = meta.get("ancho")
+    target_h = _target_height()
+    try:
+        alto_int = int(alto)
+        ancho_int = int(ancho)
+    except (TypeError, ValueError):
+        return f"scale=-2:{target_h},fps={_target_fps()}"
+
+    salida_h = min(target_h, alto_int)
+    salida_w = max(2, round((ancho_int * salida_h / alto_int) / 2) * 2)
+    return f"scale={salida_w}:{salida_h},fps={_target_fps()}"
+
+
+def _convertir(
+    origenes: list[Path],
+    destino: Path,
+    meta: dict,
+    transcodificar_video: bool = False,
+) -> tuple[bool, str | None]:
     ffmpeg = _ffmpeg_path()
     if not ffmpeg:
         return False, "ffmpeg_no_disponible"
@@ -204,20 +371,46 @@ def _convertir(origen: Path, destino: Path) -> tuple[bool, str | None]:
     except OSError as e:
         return False, f"no_se_pudo_limpiar_tmp:{e}"
 
+    concat_file = None
+    try:
+        concat_file = _crear_archivo_concat(origenes, destino)
+    except OSError as e:
+        return False, f"no_se_pudo_crear_concat:{e}"
+
+    if concat_file:
+        entrada = ["-f", "concat", "-safe", "0", "-i", str(concat_file)]
+    else:
+        entrada = ["-i", str(origenes[0])]
+
     comando = [
         ffmpeg,
         "-y",
         "-hide_banner",
         "-loglevel",
         "error",
-        "-i",
-        str(origen),
+        *entrada,
         "-map",
         "0:v:0",
         "-map",
         "0:a:0",
-        "-c:v",
-        "copy",
+    ]
+    if transcodificar_video:
+        comando.extend([
+            "-vf",
+            _filtro_video(meta),
+            "-c:v",
+            "libx264",
+            "-preset",
+            getattr(config, "WEB_COMPAT_VIDEO_PRESET", "veryfast"),
+            "-crf",
+            str(getattr(config, "WEB_COMPAT_VIDEO_CRF", 23)),
+            "-pix_fmt",
+            "yuv420p",
+        ])
+    else:
+        comando.extend(["-c:v", "copy"])
+
+    comando.extend([
         "-c:a",
         "aac",
         "-b:a",
@@ -228,7 +421,7 @@ def _convertir(origen: Path, destino: Path) -> tuple[bool, str | None]:
         "-movflags",
         "+faststart",
         str(temp),
-    ]
+    ])
 
     try:
         resultado = subprocess.run(
@@ -241,6 +434,12 @@ def _convertir(origen: Path, destino: Path) -> tuple[bool, str | None]:
         return False, "ffmpeg_timeout"
     except Exception as e:
         return False, f"ffmpeg_error:{e}"
+    finally:
+        if concat_file:
+            try:
+                concat_file.unlink()
+            except OSError:
+                pass
 
     if resultado.returncode != 0:
         try:
@@ -277,29 +476,118 @@ def _retirar_torrent_original(partido: dict) -> tuple[bool, str | None]:
     return False, "no_se_pudo_retirar_torrent"
 
 
+def _path_en_raiz(path: Path, raiz: Path) -> bool:
+    try:
+        return path.expanduser().resolve().is_relative_to(raiz.expanduser().resolve())
+    except AttributeError:
+        try:
+            return str(path.expanduser().resolve()).startswith(str(raiz.expanduser().resolve()))
+        except OSError:
+            return False
+    except OSError:
+        return False
+
+
+def _limpiar_carpetas_vacias(path: Path, raiz: Path) -> None:
+    try:
+        actual = path.expanduser().resolve()
+        raiz_resuelta = raiz.expanduser().resolve()
+    except OSError:
+        return
+    while actual != raiz_resuelta and _path_en_raiz(actual, raiz_resuelta):
+        try:
+            actual.rmdir()
+        except OSError:
+            return
+        actual = actual.parent
+
+
+def _eliminar_origenes(partido: dict, origenes: list[Path], destino: Path) -> None:
+    eliminados = []
+    errores = []
+    raiz = Path(config.DIRECTORIO_BASE)
+    for origen in origenes:
+        try:
+            if not origen.exists() or origen.resolve() == destino.resolve():
+                continue
+            if not _path_en_raiz(origen, raiz):
+                errores.append(f"fuera_de_directorio_base:{origen}")
+                continue
+            origen.unlink()
+            eliminados.append(str(origen))
+            _limpiar_carpetas_vacias(origen.parent, raiz)
+        except OSError as e:
+            errores.append(f"{origen}:{e}")
+
+    if eliminados:
+        partido["archivo_origen_eliminado"] = True
+        partido["archivo_origen_eliminado_en"] = datetime.now(timezone.utc).isoformat()
+        partido["archivos_origen_eliminados"] = eliminados
+    if errores:
+        partido["archivo_origen_eliminado_error"] = " | ".join(errores)
+        logger.warning(f"No se pudieron eliminar todos los origenes: {partido['archivo_origen_eliminado_error']}")
+
+
+def _marcar_historico_sin_archivo(partido: dict) -> None:
+    ultimo = partido.get("archivo_local") or partido.get("archivo_local_ultimo")
+    if ultimo:
+        partido["archivo_local_ultimo"] = ultimo
+    if partido.get("archivo_web"):
+        partido["archivo_web_ultimo"] = partido.get("archivo_web")
+    partido["archivo_local"] = None
+    partido["archivo_existe"] = False
+    partido["archivo_web_existe"] = False
+    partido["archivo_local_estado"] = "movido_o_borrado"
+    partido["compatibilidad_web"] = _estado("historico", "archivo_movido_o_borrado")
+
+
 def postprocesar_partido_web(partido: dict, dry_run: bool = False) -> str:
     """Postprocesa un partido y retorna el estado resumido."""
     if not partido.get("descargado"):
         return "omitido"
 
+    if descarga_en_progreso(partido):
+        partido["compatibilidad_web"] = _estado("pendiente", "descarga_en_progreso")
+        return "pendiente"
+
     existente_web = _ruta_existente(partido.get("archivo_web"), partido.get("archivo_web_ultimo"))
+    meta_web = None
     if existente_web:
         meta_web = _metadata_media(existente_web)
-        if _archivo_compatible_web(existente_web, meta_web):
+        if (
+            _archivo_compatible_web(existente_web, meta_web)
+            and not _requiere_transcodificacion_pesada([existente_web], meta_web)
+        ):
             _marcar_compatible(partido, existente_web, meta_web, "mp4_existente")
             return "compatible"
 
-    origen = _ruta_existente(partido.get("archivo_local"), partido.get("archivo_local_ultimo"))
+    origen = None
+    if existente_web and meta_web and _archivo_compatible_web(existente_web, meta_web):
+        origen = existente_web
     if not origen:
+        origen = _ruta_existente(partido.get("archivo_local"), partido.get("archivo_local_ultimo"))
+    if not origen:
+        if partido.get("postprocesado_web_en") or partido.get("archivo_web_ultimo"):
+            _marcar_historico_sin_archivo(partido)
+            return "historico"
         _marcar_no_compatible(partido, "sin_archivo_local", "no_hay_archivo_para_postprocesar")
         return "sin_archivo"
 
-    meta = _metadata_media(origen)
+    origenes = _origenes_postproceso(partido, origen)
+    if str(origen.expanduser().resolve()) not in {
+        str(path.expanduser().resolve()) for path in origenes
+    }:
+        origenes.insert(0, origen)
+    origenes = _unificar_paths(origenes)
+
+    meta = _metadata_media(origenes[0])
     if meta.get("ffprobe") != "ok":
-        _marcar_no_compatible(partido, "omitido", str(meta.get("ffprobe")), origen, meta=meta)
+        _marcar_no_compatible(partido, "omitido", str(meta.get("ffprobe")), origenes[0], meta=meta)
         return "omitido"
 
-    if _archivo_compatible_web(origen, meta):
+    transcodificar_video = _requiere_transcodificacion_pesada(origenes, meta)
+
+    if len(origenes) == 1 and _archivo_compatible_web(origen, meta) and not transcodificar_video:
         _marcar_compatible(partido, origen, meta, "origen_compatible")
         return "compatible"
 
@@ -307,7 +595,7 @@ def postprocesar_partido_web(partido: dict, dry_run: bool = False) -> str:
         _marcar_no_compatible(partido, "deshabilitado", "WEB_COMPAT_POSTPROCESO=0", origen, meta=meta)
         return "omitido"
 
-    if not _video_copiable(meta):
+    if not transcodificar_video and not _video_copiable(meta):
         _marcar_no_compatible(partido, "omitido", "video_requeriria_recodificacion", origen, meta=meta)
         return "omitido"
 
@@ -318,14 +606,16 @@ def postprocesar_partido_web(partido: dict, dry_run: bool = False) -> str:
     destino = _destino_mp4(partido, origen)
     if destino.exists():
         meta_destino = _metadata_media(destino)
-        if _archivo_compatible_web(destino, meta_destino):
+        if (
+            _archivo_compatible_web(destino, meta_destino)
+            and not _requiere_transcodificacion_pesada([destino], meta_destino)
+        ):
             _marcar_compatible(partido, destino, meta_destino, "mp4_existente")
             return "compatible"
 
-    try:
-        tamano_origen = origen.stat().st_size
-    except OSError:
-        _marcar_no_compatible(partido, "sin_archivo_local", "origen_no_lee_stat", origen, destino, meta)
+    tamano_origen = _tamano_total(origenes)
+    if tamano_origen <= 0:
+        _marcar_no_compatible(partido, "sin_archivo_local", "origen_no_lee_stat", origenes[0], destino, meta)
         return "sin_archivo"
 
     ok_espacio, motivo_espacio = _espacio_suficiente(destino, tamano_origen)
@@ -333,15 +623,19 @@ def postprocesar_partido_web(partido: dict, dry_run: bool = False) -> str:
         _marcar_no_compatible(partido, "pendiente", motivo_espacio or "espacio_insuficiente", origen, destino, meta)
         return "pendiente"
 
+    modo = "transcode_720p" if transcodificar_video else "remux_aac"
+    partes = f"{len(origenes)} partes, " if len(origenes) > 1 else ""
+    tamano_gb = round(tamano_origen / 1024**3, 2)
     logger.info(
         "Postproceso web: "
-        f"{origen.name} ({meta.get('codec_audio', 'audio?')}) -> {destino.name} (aac/mp4)"
+        f"{origen.name} ({partes}{tamano_gb}GB) -> {destino.name} ({modo})"
     )
     if dry_run:
-        _marcar_no_compatible(partido, "dry_run", "se_convertiria_a_mp4_aac", origen, destino, meta)
+        motivo = "se_transcodificaria_720p_aac" if transcodificar_video else "se_convertiria_a_mp4_aac"
+        _marcar_no_compatible(partido, "dry_run", motivo, origen, destino, meta)
         return "pendiente"
 
-    exito, error = _convertir(origen, destino)
+    exito, error = _convertir(origenes, destino, meta, transcodificar_video)
     if not exito:
         _marcar_no_compatible(partido, "error", error or "ffmpeg_fallo", origen, destino, meta)
         logger.warning(f"No se pudo generar MP4 compatible para {origen.name}: {error}")
@@ -352,34 +646,34 @@ def postprocesar_partido_web(partido: dict, dry_run: bool = False) -> str:
         _marcar_no_compatible(partido, "error", "mp4_generado_no_compatible", origen, destino, meta_final)
         return "error"
 
-    _marcar_compatible(partido, destino, meta_final, "convertido_audio_aac")
-    partido["archivo_origen_postproceso"] = str(origen)
+    motivo_final = "transcodificado_720p_30fps" if transcodificar_video else "convertido_audio_aac"
+    _marcar_compatible(partido, destino, meta_final, motivo_final)
+    partido["archivo_origen_postproceso"] = str(origenes[0])
+    partido["archivos_origen_postproceso"] = [str(path) for path in origenes]
+    partido["postproceso_modo"] = modo
 
-    if not getattr(config, "WEB_COMPAT_CONSERVAR_ORIGINAL", True):
+    conservar_original = getattr(config, "WEB_COMPAT_CONSERVAR_ORIGINAL", True)
+    if transcodificar_video:
+        conservar_original = getattr(config, "WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO", False)
+
+    if not conservar_original:
         retirado, motivo_retiro = _retirar_torrent_original(partido)
         if not retirado:
             partido["archivo_origen_eliminado_error"] = motivo_retiro
             partido["compatibilidad_web"] = _estado(
                 "compatible_origen_conservado",
                 motivo_retiro or "no_se_pudo_retirar_torrent",
-                origen,
+                origenes[0],
                 destino,
                 meta_final,
             )
             logger.warning(
-                "MP4 generado, pero se conserva el MKV porque no se pudo retirar "
-                f"el torrent de qBittorrent: {origen.name}"
+                "MP4 generado, pero se conserva el origen porque no se pudo retirar "
+                f"el torrent de qBittorrent: {origenes[0].name}"
             )
             return "convertido"
 
-        try:
-            if origen.exists() and origen.resolve() != destino.resolve():
-                origen.unlink()
-                partido["archivo_origen_eliminado"] = True
-                partido["archivo_origen_eliminado_en"] = datetime.now(timezone.utc).isoformat()
-        except OSError as e:
-            partido["archivo_origen_eliminado_error"] = str(e)
-            logger.warning(f"No se pudo eliminar origen tras postproceso: {origen.name}: {e}")
+        _eliminar_origenes(partido, origenes, destino)
 
     return "convertido"
 
@@ -394,6 +688,8 @@ def postprocesar_compatibilidad_web(calendario: list[dict], dry_run: bool = Fals
         "errores": 0,
         "omitidos": 0,
         "sin_archivo": 0,
+        "historicos": 0,
+        "purgados_idioma": 0,
     }
     for partido in calendario:
         if not partido.get("descargado"):
@@ -410,8 +706,19 @@ def postprocesar_compatibilidad_web(calendario: list[dict], dry_run: bool = Fals
             resumen["errores"] += 1
         elif estado == "sin_archivo":
             resumen["sin_archivo"] += 1
+        elif estado == "historico":
+            resumen["historicos"] += 1
         else:
             resumen["omitidos"] += 1
+
+        if estado in {"compatible", "convertido"}:
+            try:
+                from limpieza_idiomas import purgar_ingles_si_es_final
+
+                purga = purgar_ingles_si_es_final(partido, dry_run=dry_run)
+                resumen["purgados_idioma"] += purga.get("purgados", 0)
+            except Exception as e:
+                logger.debug(f"No se pudo ejecutar purga de idioma anterior: {e}")
 
     if resumen["verificados"]:
         logger.info(
@@ -419,6 +726,8 @@ def postprocesar_compatibilidad_web(calendario: list[dict], dry_run: bool = Fals
             f"{resumen['compatibles']} compatibles, "
             f"{resumen['convertidos']} convertidos, "
             f"{resumen['pendientes']} pendientes, "
-            f"{resumen['errores']} errores"
+            f"{resumen['errores']} errores, "
+            f"{resumen['historicos']} historicos, "
+            f"{resumen['purgados_idioma']} purgados por idioma"
         )
     return resumen

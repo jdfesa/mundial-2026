@@ -103,6 +103,9 @@ IDIOMAS_FINALES = ["es"]
 # preferis no asumir.
 IDIOMA_DEFAULT_SIN_INDICADOR = "en"
 PERMITIR_UPGRADE_IDIOMA = True
+PURGAR_INGLES_AL_FINAL_ES = (
+    os.getenv("PURGAR_INGLES_AL_FINAL_ES", "1") not in {"0", "false", "False"}
+)
 ZONA_HORARIA_REPORTE = os.getenv("MUNDIAL_ZONA_HORARIA", "America/Argentina/Buenos_Aires")
 EXTENSIONES_VIDEO = [".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts", ".webm"]
 
@@ -119,8 +122,21 @@ WEB_COMPAT_AUDIO_BITRATE = os.getenv("WEB_COMPAT_AUDIO_BITRATE", "192k")
 WEB_COMPAT_AUDIO_CHANNELS = int(os.getenv("WEB_COMPAT_AUDIO_CHANNELS", "2"))
 WEB_COMPAT_TIMEOUT_SEGUNDOS = int(os.getenv("WEB_COMPAT_TIMEOUT_SEGUNDOS", "7200"))
 WEB_COMPAT_MIN_FREE_GB = float(os.getenv("WEB_COMPAT_MIN_FREE_GB", "1.0"))
+WEB_COMPAT_TRANSCODE_PESADO = (
+    os.getenv("WEB_COMPAT_TRANSCODE_PESADO", "1") not in {"0", "false", "False"}
+)
+WEB_COMPAT_TRANSCODE_UMBRAL_GB = float(
+    os.getenv("WEB_COMPAT_TRANSCODE_UMBRAL_GB", str(POSTPROCESO_UMBRAL_GB))
+)
+WEB_COMPAT_TARGET_HEIGHT = int(os.getenv("WEB_COMPAT_TARGET_HEIGHT", str(ALTURA_PREFERIDA)))
+WEB_COMPAT_TARGET_FPS = int(os.getenv("WEB_COMPAT_TARGET_FPS", "30"))
+WEB_COMPAT_VIDEO_CRF = int(os.getenv("WEB_COMPAT_VIDEO_CRF", "23"))
+WEB_COMPAT_VIDEO_PRESET = os.getenv("WEB_COMPAT_VIDEO_PRESET", "veryfast")
 WEB_COMPAT_CONSERVAR_ORIGINAL = (
     os.getenv("WEB_COMPAT_CONSERVAR_ORIGINAL", "1") not in {"0", "false", "False"}
+)
+WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO = (
+    os.getenv("WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO", "0") not in {"0", "false", "False"}
 )
 WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL = (
     os.getenv("WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL", "1") not in {"0", "false", "False"}
