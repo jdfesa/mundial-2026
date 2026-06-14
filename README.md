@@ -151,6 +151,7 @@ probar qBittorrent y, en macOS, reinstalar la tarea automatica con launchd.
 
 ```bash
 ./run.sh                   # Ejecutar
+./run.sh --watch           # Ejecutar y seguir revisando hasta 4h, cada 30 min
 ./run.sh --dry-run         # Simular sin descargar
 ./run.sh --status          # Ver estado de descargas
 ./run.sh --forzar 3        # Forzar descarga del partido #3
@@ -159,6 +160,14 @@ probar qBittorrent y, en macOS, reinstalar la tarea automatica con launchd.
 ./run.sh --auditar-biblioteca # Detectar rutas/IDs inconsistentes
 ./run.sh --sanear-biblioteca --dry-run # Simular saneamiento local de rutas/estado
 ./run.sh --marcar-descargado 1 --idioma en --archivo "Titulo visto en qBittorrent"
+```
+
+`--watch` no se llama recursivamente: mantiene un loop controlado, con lock para evitar dos
+instancias al mismo tiempo. Por defecto corre hasta 240 minutos y revisa cada 30 minutos.
+Para ajustar una corrida puntual:
+
+```bash
+./run.sh --watch --watch-minutos 240 --watch-intervalo 30
 ```
 
 En Linux no hay instalador incluido; si queres automatizar, agregá un cron o systemd timer

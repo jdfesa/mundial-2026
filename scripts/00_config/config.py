@@ -83,6 +83,9 @@ MINUTOS_ENTRE_REINTENTOS = 30
 MINUTOS_ENTRE_REINTENTOS_MEJORA = 180
 # Minutos desde que se encola una descarga hasta la primera revision esperada.
 DESCARGA_REVISAR_DESPUES_MINUTOS = int(os.getenv("DESCARGA_REVISAR_DESPUES_MINUTOS", "60"))
+DESCARGA_ESTIMACION_CHICA_MINUTOS = int(os.getenv("DESCARGA_ESTIMACION_CHICA_MINUTOS", "60"))
+DESCARGA_ESTIMACION_GRANDE_MINUTOS = int(os.getenv("DESCARGA_ESTIMACION_GRANDE_MINUTOS", "180"))
+DESCARGA_ESTIMACION_UMBRAL_GRANDE_GB = float(os.getenv("DESCARGA_ESTIMACION_UMBRAL_GRANDE_GB", "5.0"))
 # Si qBittorrent no responde pero los videos locales estan presentes, con
 # metadata legible y sin cambios recientes, el verificador puede desbloquear el
 # postproceso. Esto cubre casos donde la API quedo atrasada pero el torrent ya
@@ -119,6 +122,14 @@ PURGAR_INGLES_AL_FINAL_ES = (
 )
 ZONA_HORARIA_REPORTE = os.getenv("MUNDIAL_ZONA_HORARIA", "America/Argentina/Buenos_Aires")
 EXTENSIONES_VIDEO = [".mp4", ".mkv", ".avi", ".mov", ".m4v", ".ts", ".webm"]
+
+# ─── Watch / Orquestacion Continua ──────────────────────────────────────────
+WATCH_MAX_MINUTOS = int(os.getenv("WATCH_MAX_MINUTOS", "240"))
+WATCH_INTERVALO_MINUTOS = int(os.getenv("WATCH_INTERVALO_MINUTOS", "30"))
+WATCH_LOCKFILE = os.getenv(
+    "WATCH_LOCKFILE",
+    os.path.join(DIRECTORIO_PROYECTO, ".mundial_watch.lock"),
+)
 
 # ─── Compatibilidad Web / HTML5 ─────────────────────────────────────────────
 # Para que el indice HTML se comporte como una experiencia tipo YouTube, los

@@ -23,6 +23,8 @@ STATE_FIELDS = (
     "revisar_descarga_despues_de",
     "descarga_estado",
     "descarga_progreso",
+    "descarga_tamano_estimado_gb",
+    "descarga_estimacion_minutos",
     "descarga_actualizada_en",
     "descarga_confirmada_por",
     "descarga_confirmada_en",

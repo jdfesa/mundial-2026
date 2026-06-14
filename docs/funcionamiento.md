@@ -73,11 +73,11 @@ version en espanol, se descarga y el partido pasa a estado final.
 
 El `id` del calendario no se recalcula por posicion ni por archivos presentes. Funciona como
 identidad estable del partido: si `005` fue Qatar vs Suiza, cualquier variante de idioma usa
-ese mismo prefijo. El sufijo (`_es`, `_en`, `_ru`, `_bg`, etc.) diferencia variantes fisicas
-sin cambiar el ID.
+ese mismo prefijo. El sufijo (`_es`, `_en`, `_rus`, `_bul`, etc.) diferencia variantes
+fisicas sin cambiar el ID.
 
 Cuando una version en espanol queda disponible y compatible para la web, el flujo puede purgar
-archivos canonicos no finales del mismo ID (`005_..._en.*`, `005_..._bg.*`, etc.) para
+archivos canonicos no finales del mismo ID (`005_..._en.*`, `005_..._bul.*`, etc.) para
 recuperar espacio. Esto se controla con `PURGAR_INGLES_AL_FINAL_ES`.
 
 Las busquedas de mejora para partidos ya descargados en ingles no consumen los intentos
@@ -130,11 +130,11 @@ forma segura:
 ```text
 001_mexico_vs_sudafrica_en.mkv
 002_corea_del_sur_vs_rep_checa_es.mp4
-005_qatar_vs_suiza_bg.mp4
+005_qatar_vs_suiza_bul.mp4
 ```
 
 El prefijo numerico evita colisiones, los equipos salen del calendario en espanol y el
-sufijo indica idioma/estado: `_es` es final; `_en`, `_bg`, `_ru` u otros quedan como
+sufijo indica idioma/estado: `_es` es final; `_en`, `_bul`, `_rus` u otros quedan como
 mejorables con el mismo peso.
 
 Si qBittorrent esta administrando el archivo, el renombrado se intenta por la Web API de
@@ -162,6 +162,43 @@ El comando manual para preparar la biblioteca existente sin buscar descargas nue
 ```bash
 ./run.sh --postprocesar-web
 ```
+
+Ese comando no termina solo en la conversion: al finalizar vuelve a verificar metadata,
+renombra el MP4 final si el idioma detectado cambia el sufijo, guarda estado, genera reporte
+y regenera el indice web.
+
+## Modo Watch
+
+`./run.sh` hace una pasada completa y termina. Para dejar el orquestador observando el flujo
+durante una ventana controlada existe:
+
+```bash
+./run.sh --watch
+```
+
+El modo watch no se llama a si mismo. Ejecuta un loop interno con lockfile para evitar dos
+instancias simultaneas:
+
+```text
+mientras no venza el limite:
+  ejecutar una pasada normal
+  si no hay descargas activas ni postprocesos pendientes, terminar
+  esperar WATCH_INTERVALO_MINUTOS
+```
+
+Valores por defecto:
+
+```env
+WATCH_MAX_MINUTOS=240
+WATCH_INTERVALO_MINUTOS=30
+DESCARGA_ESTIMACION_CHICA_MINUTOS=60
+DESCARGA_ESTIMACION_GRANDE_MINUTOS=180
+DESCARGA_ESTIMACION_UMBRAL_GRANDE_GB=5.0
+```
+
+La estimacion se guarda cuando se encola una descarga: hasta 5 GB se toma como ventana de
+aprox. 1 hora; por encima de 5 GB, como aprox. 3 horas. El watch igual revisa con el intervalo
+configurado para no quedar ciego si qBittorrent termina antes.
 
 Para auditar o sanear inconsistencias locales de carpetas/IDs:
 

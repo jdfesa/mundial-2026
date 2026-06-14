@@ -15,6 +15,7 @@ import json
 import os
 import re
 import sys
+import time
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -119,7 +120,7 @@ def preparar_compatibilidad_web(calendario: list[dict], dry_run: bool = False) -
     """
     resumen = postprocesar_compatibilidad_web(calendario, dry_run=dry_run)
     if not dry_run and (resumen.get("convertidos") or resumen.get("compatibles")):
-        verificar_archivos(calendario, renombrar_archivos=False)
+        verificar_archivos(calendario, renombrar_archivos=True)
     return resumen
 
 
@@ -141,6 +142,37 @@ def _extraer_torrent_hash(magnet: str | None) -> str | None:
     if not match:
         return None
     return match.group(1).lower()
+
+
+def _valor_arg(nombre: str) -> str | None:
+    if nombre not in sys.argv:
+        return None
+    idx = sys.argv.index(nombre)
+    if idx + 1 >= len(sys.argv):
+        return None
+    return sys.argv[idx + 1]
+
+
+def _valor_arg_int(nombre: str, default: int) -> int:
+    valor = _valor_arg(nombre)
+    if valor is None:
+        return default
+    try:
+        return int(valor)
+    except ValueError:
+        logger.error(f"{nombre} debe ser un numero entero")
+        sys.exit(1)
+
+
+def estimar_minutos_descarga(tamano_gb: float | int | str | None) -> int:
+    """Estima una ventana de descarga para planificar revisiones en --watch."""
+    try:
+        tamano = float(tamano_gb or 0)
+    except (TypeError, ValueError):
+        tamano = 0
+    if tamano > float(getattr(config, "DESCARGA_ESTIMACION_UMBRAL_GRANDE_GB", 5.0)):
+        return int(getattr(config, "DESCARGA_ESTIMACION_GRANDE_MINUTOS", 180))
+    return int(getattr(config, "DESCARGA_ESTIMACION_CHICA_MINUTOS", 60))
 
 
 def partido_listo_para_buscar(partido: dict) -> bool:
@@ -219,12 +251,17 @@ def registrar_descarga(partido: dict, resultado: dict, ruta: str | None = None) 
     partido.setdefault("descargado_en", ahora)
     partido["ultima_descarga_en"] = ahora
     partido.setdefault("descarga_iniciada_en", ahora)
+    tamano_gb = resultado.get("tamano_gb")
+    estimacion_minutos = estimar_minutos_descarga(tamano_gb)
     partido["revisar_descarga_despues_de"] = (
         datetime.now(timezone.utc)
-        + timedelta(minutes=getattr(config, "DESCARGA_REVISAR_DESPUES_MINUTOS", 60))
+        + timedelta(minutes=estimacion_minutos)
     ).isoformat()
     partido.setdefault("descarga_estado", "iniciada")
     partido.setdefault("descarga_progreso", 0)
+    if tamano_gb is not None:
+        partido["descarga_tamano_estimado_gb"] = tamano_gb
+    partido["descarga_estimacion_minutos"] = estimacion_minutos
     partido["archivo"] = titulo
     partido["proveedor"] = resultado.get("fuente")
     partido["ruta"] = ruta or resultado.get("ruta")
@@ -546,6 +583,273 @@ def mostrar_estado():
     print("\n" + "="*70)
 
 
+def ejecutar_pasada_operativa(
+    dry_run: bool = False,
+    solo_manuales: bool = False,
+    forzar_id: int | None = None,
+) -> dict:
+    """Ejecuta una pasada completa del flujo normal."""
+    logger.info("="*60)
+    logger.info("🏆 Descargador de Partidos - Mundial 2026")
+    logger.info(f"   Hora: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"   Modo: {'DRY RUN' if dry_run else 'PRODUCCIÓN'}")
+    if solo_manuales:
+        logger.info("   Fuentes: solo manuales")
+    logger.info("="*60)
+
+    calendario = cargar_calendario()
+    estado = cargar_estado()
+    aplicar_estado(calendario, estado)
+    normalizar_calendario(calendario)
+    aplicar_marcadores_borrado(calendario)
+    if not dry_run:
+        sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
+        verificar_archivos(calendario, renombrar_archivos=True)
+        sincronizar_marcadores_borrado(calendario)
+    logger.info(f"Calendario cargado: {len(calendario)} partidos")
+
+    os.makedirs(config.DIRECTORIO_BASE, exist_ok=True)
+
+    contadores = {"descargados": 0, "fallidos": 0, "pendientes": 0}
+
+    if forzar_id:
+        partido = next((p for p in calendario if p.get("id") == forzar_id), None)
+        if not partido:
+            logger.error(f"No se encontró partido con ID {forzar_id}")
+            sys.exit(1)
+
+        logger.info(f"Forzando descarga de: {partido['equipo1']} vs {partido['equipo2']}")
+        partido["intentos"] = 0
+        partido["descargado"] = False
+
+        exito = procesar_partido(partido, dry_run=dry_run, solo_manuales=solo_manuales)
+        if exito is True:
+            contadores["descargados"] += 1
+        elif exito is False:
+            partido["intentos"] = partido.get("intentos", 0) + 1
+            partido["ultimo_intento"] = datetime.now(timezone.utc).isoformat()
+            contadores["fallidos"] += 1
+        else:
+            contadores["pendientes"] += 1
+
+    else:
+        partidos_a_buscar = [p for p in calendario if partido_listo_para_buscar(p)]
+
+        if not partidos_a_buscar:
+            logger.info("No hay partidos pendientes para buscar en este momento")
+            ahora = datetime.now(timezone.utc)
+            proximos = []
+            for p in calendario:
+                if p.get("descargado") or p.get("equipo1") == "Por definir":
+                    continue
+                try:
+                    fecha = datetime.fromisoformat(
+                        p["fecha_hora_utc"].replace("Z", "+00:00")
+                    )
+                    if fecha > ahora:
+                        proximos.append((fecha, p))
+                except (KeyError, ValueError):
+                    pass
+
+            if proximos:
+                proximos.sort(key=lambda x: x[0])
+                prox_fecha, prox = proximos[0]
+                delta = prox_fecha - ahora
+                horas = int(delta.total_seconds() / 3600)
+                logger.info(
+                    f"Próximo partido: {prox['equipo1']} vs {prox['equipo2']} "
+                    f"en {horas} horas "
+                    f"({prox_fecha.strftime('%d/%m %H:%M')} UTC)"
+                )
+        else:
+            partidos_a_buscar.sort(
+                key=lambda p: (
+                    0 if p.get("prioridad") == "alta" else 1,
+                    p.get("fecha_hora_utc", ""),
+                )
+            )
+
+            logger.info(f"Partidos a buscar: {len(partidos_a_buscar)}")
+
+            for partido in partidos_a_buscar:
+                exito = procesar_partido(
+                    partido,
+                    dry_run=dry_run,
+                    solo_manuales=solo_manuales,
+                )
+
+                if exito is True:
+                    contadores["descargados"] += 1
+                elif exito is False:
+                    partido["intentos"] = partido.get("intentos", 0) + 1
+                    partido["ultimo_intento"] = datetime.now(timezone.utc).isoformat()
+                    contadores["fallidos"] += 1
+                else:
+                    contadores["pendientes"] += 1
+
+    if not dry_run:
+        sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
+        verificar_archivos(calendario, renombrar_archivos=True)
+        preparar_compatibilidad_web(calendario)
+        sincronizar_marcadores_borrado(calendario)
+        guardar_estado(calendario, estado)
+        generar_reporte_diario(calendario)
+        generar_indice(calendario)
+    else:
+        guardar_estado_txt(calendario)
+        generar_reporte_diario(calendario)
+
+    total_desc = sum(1 for p in calendario if p.get("descargado"))
+    total_pend = sum(1 for p in calendario
+                     if not p.get("descargado") and p.get("equipo1") != "Por definir")
+
+    logger.info("")
+    logger.info("="*60)
+    logger.info("📊 RESUMEN DE EJECUCIÓN")
+    logger.info(f"   Nuevas descargas: {contadores['descargados']}")
+    logger.info(f"   Fallidos: {contadores['fallidos']}")
+    logger.info(f"   Total descargados: {total_desc}/{len(calendario)}")
+    logger.info(f"   Total pendientes: {total_pend}")
+    logger.info("="*60)
+
+    if contadores["descargados"] > 0 or contadores["fallidos"] > 0:
+        notificar_resumen(
+            contadores["descargados"],
+            contadores["fallidos"],
+            total_pend
+        )
+
+    return {
+        "calendario": calendario,
+        "estado": estado,
+        "contadores": contadores,
+        "total_descargados": total_desc,
+        "total_pendientes": total_pend,
+    }
+
+
+def _crear_lock_watch(max_minutos: int) -> Path:
+    lock = Path(getattr(config, "WATCH_LOCKFILE", os.path.join(config.DIRECTORIO_PROYECTO, ".mundial_watch.lock")))
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    if lock.exists():
+        try:
+            edad = time.time() - lock.stat().st_mtime
+        except OSError:
+            edad = 0
+        stale_segundos = max((max_minutos + 60) * 60, 3600)
+        if edad < stale_segundos:
+            raise RuntimeError(f"ya existe un watch activo o reciente: {lock}")
+        logger.warning(f"Lock watch viejo encontrado; se reemplaza: {lock}")
+        try:
+            lock.unlink()
+        except OSError as e:
+            raise RuntimeError(f"no se pudo limpiar lock viejo {lock}: {e}") from e
+
+    fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(f"pid={os.getpid()}\n")
+        f.write(f"iniciado_en={datetime.now(timezone.utc).isoformat()}\n")
+    return lock
+
+
+def _liberar_lock_watch(lock: Path | None) -> None:
+    if not lock:
+        return
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+
+
+def _analizar_watch(calendario: list[dict]) -> dict:
+    descargas_activas = [p for p in calendario if descarga_en_progreso(p)]
+    postprocesos_pendientes = []
+    for partido in calendario:
+        if not partido.get("descargado") or partido.get("marcador_borrado_existe"):
+            continue
+        if descarga_en_progreso(partido):
+            continue
+        compat = partido.get("compatibilidad_web") or {}
+        if compat.get("estado") == "pendiente":
+            postprocesos_pendientes.append(partido)
+
+    estimaciones = []
+    for partido in descargas_activas:
+        minutos = partido.get("descarga_estimacion_minutos")
+        if not minutos:
+            minutos = estimar_minutos_descarga(partido.get("descarga_tamano_estimado_gb"))
+        estimaciones.append(int(minutos))
+
+    return {
+        "estable": not descargas_activas and not postprocesos_pendientes,
+        "descargas_activas": descargas_activas,
+        "postprocesos_pendientes": postprocesos_pendientes,
+        "estimacion_max_minutos": max(estimaciones) if estimaciones else 0,
+    }
+
+
+def ejecutar_watch(
+    dry_run: bool = False,
+    solo_manuales: bool = False,
+    max_minutos: int | None = None,
+    intervalo_minutos: int | None = None,
+) -> None:
+    """Ejecuta pasadas normales hasta que el flujo quede estable o venza el limite."""
+    max_minutos = max_minutos if max_minutos is not None else int(getattr(config, "WATCH_MAX_MINUTOS", 240))
+    intervalo_minutos = intervalo_minutos if intervalo_minutos is not None else int(getattr(config, "WATCH_INTERVALO_MINUTOS", 30))
+    max_minutos = max(1, max_minutos)
+    intervalo_minutos = max(1, intervalo_minutos)
+
+    lock = None
+    inicio = time.monotonic()
+    vuelta = 1
+    try:
+        lock = _crear_lock_watch(max_minutos)
+        logger.info(
+            "Modo watch activo: "
+            f"max={max_minutos} min, intervalo={intervalo_minutos} min, lock={lock}"
+        )
+        while True:
+            transcurridos = int((time.monotonic() - inicio) / 60)
+            restante = max_minutos - transcurridos
+            if restante <= 0:
+                logger.info("Watch finalizado por limite de tiempo")
+                break
+
+            logger.info(f"Watch pasada #{vuelta} (quedan aprox. {restante} min)")
+            resultado = ejecutar_pasada_operativa(
+                dry_run=dry_run,
+                solo_manuales=solo_manuales,
+                forzar_id=None,
+            )
+            analisis = _analizar_watch(resultado["calendario"])
+            if analisis["estable"]:
+                logger.info("Watch finalizado: no quedan descargas ni postprocesos pendientes")
+                break
+
+            if analisis["descargas_activas"]:
+                logger.info(
+                    "Watch: "
+                    f"{len(analisis['descargas_activas'])} descarga(s) activa(s); "
+                    f"estimacion maxima {analisis['estimacion_max_minutos']} min"
+                )
+            if analisis["postprocesos_pendientes"]:
+                logger.info(
+                    "Watch: "
+                    f"{len(analisis['postprocesos_pendientes'])} postproceso(s) pendiente(s)"
+                )
+
+            espera = min(intervalo_minutos, max_minutos - int((time.monotonic() - inicio) / 60))
+            if espera <= 0:
+                logger.info("Watch finalizado por limite de tiempo")
+                break
+            logger.info(f"Watch espera {espera} min antes de la proxima pasada")
+            time.sleep(espera * 60)
+            vuelta += 1
+    finally:
+        _liberar_lock_watch(lock)
+
+
 def main():
     """Función principal del descargador."""
     # Parsear argumentos
@@ -555,6 +859,15 @@ def main():
     solo_postprocesar_web = "--postprocesar-web" in sys.argv
     solo_auditar_biblioteca = "--auditar-biblioteca" in sys.argv
     solo_sanear_biblioteca = "--sanear-biblioteca" in sys.argv
+    modo_watch = "--watch" in sys.argv
+    watch_minutos = _valor_arg_int(
+        "--watch-minutos",
+        int(getattr(config, "WATCH_MAX_MINUTOS", 240)),
+    )
+    watch_intervalo = _valor_arg_int(
+        "--watch-intervalo",
+        int(getattr(config, "WATCH_INTERVALO_MINUTOS", 30)),
+    )
     forzar_id = None
     marcar_id = None
     marcar_idioma = "en"
@@ -667,145 +980,23 @@ def main():
         mostrar_estado()
         return
 
-    logger.info("="*60)
-    logger.info("🏆 Descargador de Partidos - Mundial 2026")
-    logger.info(f"   Hora: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    logger.info(f"   Modo: {'DRY RUN' if dry_run else 'PRODUCCIÓN'}")
-    if solo_manuales:
-        logger.info("   Fuentes: solo manuales")
-    logger.info("="*60)
-
-    # Cargar calendario
-    calendario = cargar_calendario()
-    estado = cargar_estado()
-    aplicar_estado(calendario, estado)
-    normalizar_calendario(calendario)
-    aplicar_marcadores_borrado(calendario)
-    if not dry_run:
-        sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
-        verificar_archivos(calendario, renombrar_archivos=True)
-        sincronizar_marcadores_borrado(calendario)
-    logger.info(f"Calendario cargado: {len(calendario)} partidos")
-
-    # Crear directorio base
-    os.makedirs(config.DIRECTORIO_BASE, exist_ok=True)
-
-    contadores = {"descargados": 0, "fallidos": 0, "pendientes": 0}
-
-    if forzar_id:
-        # Forzar descarga de un partido específico
-        partido = next((p for p in calendario if p.get("id") == forzar_id), None)
-        if not partido:
-            logger.error(f"No se encontró partido con ID {forzar_id}")
+    if modo_watch:
+        if forzar_id:
+            logger.error("--watch no se combina con --forzar para evitar descargas repetidas")
             sys.exit(1)
-
-        logger.info(f"Forzando descarga de: {partido['equipo1']} vs {partido['equipo2']}")
-        partido["intentos"] = 0
-        partido["descargado"] = False
-
-        exito = procesar_partido(partido, dry_run=dry_run, solo_manuales=solo_manuales)
-        if exito is True:
-            contadores["descargados"] += 1
-        elif exito is False:
-            partido["intentos"] = partido.get("intentos", 0) + 1
-            partido["ultimo_intento"] = datetime.now(timezone.utc).isoformat()
-            contadores["fallidos"] += 1
-        else:
-            contadores["pendientes"] += 1
-
-    else:
-        # Procesar partidos pendientes
-        # Priorizar: alta primero, luego por fecha
-        partidos_a_buscar = [p for p in calendario if partido_listo_para_buscar(p)]
-
-        if not partidos_a_buscar:
-            logger.info("No hay partidos pendientes para buscar en este momento")
-            # Mostrar próximo partido
-            ahora = datetime.now(timezone.utc)
-            proximos = []
-            for p in calendario:
-                if p.get("descargado") or p.get("equipo1") == "Por definir":
-                    continue
-                try:
-                    fecha = datetime.fromisoformat(
-                        p["fecha_hora_utc"].replace("Z", "+00:00")
-                    )
-                    if fecha > ahora:
-                        proximos.append((fecha, p))
-                except (KeyError, ValueError):
-                    pass
-
-            if proximos:
-                proximos.sort(key=lambda x: x[0])
-                prox_fecha, prox = proximos[0]
-                delta = prox_fecha - ahora
-                horas = int(delta.total_seconds() / 3600)
-                logger.info(
-                    f"Próximo partido: {prox['equipo1']} vs {prox['equipo2']} "
-                    f"en {horas} horas "
-                    f"({prox_fecha.strftime('%d/%m %H:%M')} UTC)"
-                )
-        else:
-            # Ordenar: prioridad alta primero, luego por fecha
-            partidos_a_buscar.sort(
-                key=lambda p: (
-                    0 if p.get("prioridad") == "alta" else 1,
-                    p.get("fecha_hora_utc", ""),
-                )
-            )
-
-            logger.info(f"Partidos a buscar: {len(partidos_a_buscar)}")
-
-            for partido in partidos_a_buscar:
-                exito = procesar_partido(
-                    partido,
-                    dry_run=dry_run,
-                    solo_manuales=solo_manuales,
-                )
-
-                if exito is True:
-                    contadores["descargados"] += 1
-                elif exito is False:
-                    partido["intentos"] = partido.get("intentos", 0) + 1
-                    partido["ultimo_intento"] = datetime.now(timezone.utc).isoformat()
-                    contadores["fallidos"] += 1
-                else:
-                    contadores["pendientes"] += 1
-
-    # Guardar estado operativo separado del calendario.
-    if not dry_run:
-        sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
-        verificar_archivos(calendario, renombrar_archivos=True)
-        preparar_compatibilidad_web(calendario)
-        sincronizar_marcadores_borrado(calendario)
-        guardar_estado(calendario, estado)
-        generar_reporte_diario(calendario)
-        generar_indice(calendario)
-    else:
-        guardar_estado_txt(calendario)
-        generar_reporte_diario(calendario)
-
-    # Resumen
-    total_desc = sum(1 for p in calendario if p.get("descargado"))
-    total_pend = sum(1 for p in calendario
-                     if not p.get("descargado") and p.get("equipo1") != "Por definir")
-
-    logger.info("")
-    logger.info("="*60)
-    logger.info(f"📊 RESUMEN DE EJECUCIÓN")
-    logger.info(f"   Nuevas descargas: {contadores['descargados']}")
-    logger.info(f"   Fallidos: {contadores['fallidos']}")
-    logger.info(f"   Total descargados: {total_desc}/{len(calendario)}")
-    logger.info(f"   Total pendientes: {total_pend}")
-    logger.info("="*60)
-
-    # Notificación resumen
-    if contadores["descargados"] > 0 or contadores["fallidos"] > 0:
-        notificar_resumen(
-            contadores["descargados"],
-            contadores["fallidos"],
-            total_pend
+        ejecutar_watch(
+            dry_run=dry_run,
+            solo_manuales=solo_manuales,
+            max_minutos=watch_minutos,
+            intervalo_minutos=watch_intervalo,
         )
+        return
+
+    ejecutar_pasada_operativa(
+        dry_run=dry_run,
+        solo_manuales=solo_manuales,
+        forzar_id=forzar_id,
+    )
 
 
 if __name__ == "__main__":
