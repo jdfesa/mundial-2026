@@ -73,7 +73,7 @@ los descarga vía qBittorrent y los organiza automáticamente en carpetas por fa
 - Prioriza español, partido completo, 720p y tamaños razonables.
 - Mantiene historial en `estado_descargas.json`, independiente de archivos locales.
 - Si una descarga está en inglés queda `MEJORABLE`; si está en español queda `FINAL`.
-- No recomprime video: si hace falta para Chrome, solo convierte audio a AAC en MP4.
+- Genera MP4 para Chrome: remux si el archivo es razonable, transcode 720p/30fps si pesa mas de 5 GB.
 - `yt-dlp` existe solo como fallback tardío y validado.
 
 Detalle de reglas, idioma, historial, nombres, postproceso y reportes:

@@ -30,3 +30,6 @@ datos_ftp_mundial.txt
 setup_windows_smb.bat
 datos_smb_mundial.txt
 partidos_para_windows/
+
+# Plan local de trabajo y decisiones operativas
+PLAN_QUIRURGICO_MUNDIAL.md

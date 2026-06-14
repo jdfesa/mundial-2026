@@ -70,6 +70,14 @@ Si un partido ya esta en ingles y una busqueda posterior encuentra otro resultad
 no se vuelve a descargar. Si encuentra una version en espanol, se descarga y el partido pasa
 a estado final.
 
+El `id` del calendario no se recalcula por posicion ni por archivos presentes. Funciona como
+identidad estable del partido: si `005` fue Qatar vs Suiza, cualquier variante de idioma usa
+ese mismo prefijo. El sufijo (`_en` o `_es`) diferencia variantes fisicas sin cambiar el ID.
+
+Cuando una version en espanol queda disponible y compatible para la web, el flujo puede purgar
+archivos canonicos del mismo ID en ingles (`005_..._en.*`) para recuperar espacio. Esto se
+controla con `PURGAR_INGLES_AL_FINAL_ES`.
+
 Las busquedas de mejora para partidos ya descargados en ingles no consumen los intentos
 normales. Se registran aparte como `intentos_mejora` y `ultimo_intento_mejora`, y se
 reintentan segun `MINUTOS_ENTRE_REINTENTOS_MEJORA`.
@@ -81,7 +89,8 @@ script para saber que partidos ya fueron descargados, cuales son finales y cuale
 siendo mejorables.
 
 La biblioteca local solo se usa como verificacion complementaria. Si moves o borras un
-archivo de esta computadora despues de pasarlo a otra PC, el partido no vuelve a pendiente.
+archivo de esta computadora despues de pasarlo a otra PC, el partido no vuelve a pendiente:
+queda como historico descargado en el estado persistente.
 
 En cada `--status` y al final de una ejecucion real, el script revisa la biblioteca local:
 
@@ -91,6 +100,7 @@ En cada `--status` y al final de una ejecucion real, el script revisa la bibliot
 - si encuentra un video, guarda metadata local;
 - si ya no encuentra el video, conserva `archivo_local_ultimo` y marca
   `archivo_local_estado=movido_o_borrado`.
+- si qBittorrent informa progreso menor a 100%, no verifica ni postprocesa archivos parciales.
 
 Para leer duracion, resolucion e idioma de pistas de audio usa `ffprobe` si esta instalado.
 Si no esta, igual detecta existencia y tamano.
@@ -120,6 +130,10 @@ experiencia simple tipo YouTube en Chrome:
 - si el origen ya es MP4 con audio compatible, se usa tal cual;
 - si el origen trae video H.264 y audio no compatible para Chrome, por ejemplo AC3 en MKV,
   se copia el video sin recomprimir y solo se convierte el audio a AAC;
+- si el origen total supera 5 GB o viene por encima de 720p, se transcodifica a MP4
+  H.264/AAC 720p/30fps;
+- si el torrent trae Part1/Part2, se resuelven las partes desde qBittorrent y se procesan
+  juntas en orden;
 - si no hay espacio libre suficiente, queda `compatibilidad_web=pendiente` y se reintenta
   en una corrida futura;
 - por defecto conserva el archivo original para no romper torrents que siguen seedeando.
@@ -137,20 +151,30 @@ WEB_COMPAT_POSTPROCESO=1
 WEB_COMPAT_AUDIO_BITRATE=192k
 WEB_COMPAT_AUDIO_CHANNELS=2
 WEB_COMPAT_MIN_FREE_GB=1.0
+WEB_COMPAT_TRANSCODE_PESADO=1
+WEB_COMPAT_TRANSCODE_UMBRAL_GB=5.0
+WEB_COMPAT_TARGET_HEIGHT=720
+WEB_COMPAT_TARGET_FPS=30
+WEB_COMPAT_VIDEO_CRF=23
+WEB_COMPAT_VIDEO_PRESET=veryfast
 WEB_COMPAT_CONSERVAR_ORIGINAL=1
+WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO=0
 WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL=1
+PURGAR_INGLES_AL_FINAL_ES=1
 ```
 
 `WEB_COMPAT_CONSERVAR_ORIGINAL=0` elimina el origen despues de generar el MP4, pero puede
 dejar qBittorrent con archivos faltantes si el torrent seguia activo. Con
 `WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL=1`, el flujo intenta retirar primero el torrent de
-qBittorrent sin pedirle que borre archivos, y luego elimina solo el MKV original. Usalo solo
-si ya no necesitas seedear ese torrent.
+qBittorrent sin pedirle que borre archivos, y luego elimina los origenes ya reemplazados
+por el MP4 final. Para transcodes pesados, `WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO=0`
+aplica esa limpieza aunque el remux normal conserve origenes. Usalo solo si ya no necesitas
+seedear ese torrent.
 
 Ademas se conserva una evaluacion de tamano/resolucion:
 
 - hasta 5 GB y 720p o menos: `mantener_origen`;
-- mas de 5 GB o por encima de 720p: `revisar`.
+- mas de 5 GB o por encima de 720p: `transcode_720p`.
 
 ## Sincronizacion Con qBittorrent
 
@@ -169,7 +193,7 @@ Si qBittorrent esta corriendo y la Web API responde, tambien sincroniza torrents
 - renombra el video principal al formato canonico en la raiz del grupo;
 - opcionalmente limpia auxiliares pequenos de spam (`.nfo`, `.txt`, `.url`);
 - genera MP4/AAC para el indice HTML cuando el audio del origen no es compatible con
-  navegador;
+  navegador o cuando el archivo es pesado;
 - no mueve archivos con `shutil` mientras qBittorrent los administra.
 
 Esto se controla con:

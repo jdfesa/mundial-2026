@@ -36,12 +36,14 @@ La ruta exacta depende de `MUNDIAL_DIRECTORIO_BASE` en `.env`.
 | `notificador.py` | Notificaciones del sistema cuando aplica. |
 | `config.py` | Configuracion centralizada; lee `.env`. |
 | `estado_descargas.py` | Estado persistente separado del calendario. |
+| `estado_partido.py` | Helpers para interpretar descarga completa/en progreso. |
 | `idioma_utils.py` | Deteccion y clasificacion de idioma. |
+| `limpieza_idiomas.py` | Purga variantes `_en` cuando ya existe `_es` final. |
 | `nombres_archivos.py` | Nombres canonicos de archivos descargados. |
 | `fuentes_manuales.py` | Logica para fuentes declaradas por el usuario. |
 | `organizador_descargas.py` | Mueve torrents completos a la carpeta final. |
 | `verificador_archivos.py` | Verifica archivos locales y metadata con ffprobe. |
-| `postprocesador_web.py` | Genera MP4 con audio AAC para reproducir desde el indice HTML. |
+| `postprocesador_web.py` | Genera MP4 web; remux o transcode 720p segun tamano/resolucion. |
 | `indice_biblioteca.py` | Genera indice HTML y playlist M3U. |
 | `reporte_diario.py` | Genera resumen diario de partidos y mejoras. |
 | `calendario_mundial_2026.json` | Calendario base de 104 partidos con fechas UTC. |
