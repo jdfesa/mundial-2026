@@ -63,6 +63,15 @@ def _score_candidato(partido: dict, path: Path) -> int:
     texto = _normalizar_match(str(path))
     score = 0
 
+    partido_id = partido.get("id")
+    id_nombre = re.match(r"^0*(\d+)_", path.name)
+    if id_nombre and partido_id is not None:
+        try:
+            if int(id_nombre.group(1)) != int(partido_id):
+                return 0
+        except (TypeError, ValueError):
+            return 0
+
     archivo_web = partido.get("archivo_web") or partido.get("archivo_web_ultimo")
     if archivo_web and Path(str(archivo_web)).name == path.name:
         score += 160
@@ -82,7 +91,6 @@ def _score_candidato(partido: dict, path: Path) -> int:
     if equipo2 and equipo2 in texto:
         score += 30
 
-    partido_id = partido.get("id")
     if partido_id is not None and re.search(rf"\b0*{partido_id}\b", texto):
         score += 5
 
@@ -397,8 +405,13 @@ def _registrar_archivo_ausente(partido: dict) -> None:
         partido["archivo_local_estado"] = "movido_o_borrado"
     else:
         partido["archivo_local_estado"] = "sin_archivo_local"
+    ultimo_web = partido.get("archivo_web") or partido.get("archivo_web_ultimo")
+    if ultimo_web:
+        partido["archivo_web_ultimo"] = ultimo_web
     partido["archivo_local"] = None
+    partido["archivo_web"] = None
     partido["archivo_existe"] = False
+    partido["archivo_web_existe"] = False
     partido["verificado_en"] = datetime.now(timezone.utc).isoformat()
 
 
@@ -407,9 +420,19 @@ def _registrar_descarga_en_progreso(partido: dict) -> None:
     ultimo = partido.get("archivo_local") or partido.get("archivo_local_ultimo")
     if ultimo:
         partido["archivo_local_ultimo"] = ultimo
+    if partido.get("archivo_web"):
+        partido["archivo_web_ultimo"] = partido.get("archivo_web")
     partido["archivo_local"] = None
+    partido["archivo_web"] = None
     partido["archivo_existe"] = False
+    partido["archivo_web_existe"] = False
     partido["archivo_local_estado"] = "descarga_en_progreso"
+    partido["compatibilidad_web"] = {
+        "estado": "pendiente",
+        "motivo": "descarga_en_progreso",
+        "actualizado_en": datetime.now(timezone.utc).isoformat(),
+    }
+    partido["audio_compatible_web"] = False
     partido["verificado_en"] = datetime.now(timezone.utc).isoformat()
 
 
