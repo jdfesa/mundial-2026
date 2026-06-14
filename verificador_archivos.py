@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import config
+from estado_partido import descarga_en_progreso
 from idioma_utils import detectar_idioma, idioma_es_final, normalizar_texto
 from nombres_archivos import nombre_canonico_partido
 
@@ -206,7 +207,7 @@ def _evaluar_postproceso(meta: dict) -> dict:
 
     if motivos:
         estado = "revisar"
-        accion = "evaluar_remux_o_compresion"
+        accion = "transcode_720p"
     else:
         estado = "omitido"
         accion = "mantener_origen"
@@ -401,15 +402,31 @@ def _registrar_archivo_ausente(partido: dict) -> None:
     partido["verificado_en"] = datetime.now(timezone.utc).isoformat()
 
 
+def _registrar_descarga_en_progreso(partido: dict) -> None:
+    """Evita tratar archivos parciales de qBittorrent como videos terminados."""
+    ultimo = partido.get("archivo_local") or partido.get("archivo_local_ultimo")
+    if ultimo:
+        partido["archivo_local_ultimo"] = ultimo
+    partido["archivo_local"] = None
+    partido["archivo_existe"] = False
+    partido["archivo_local_estado"] = "descarga_en_progreso"
+    partido["verificado_en"] = datetime.now(timezone.utc).isoformat()
+
+
 def verificar_archivos(calendario: list[dict], renombrar_archivos: bool = False) -> dict:
     """Actualiza los partidos con metadata local y retorna resumen."""
     videos_cache = _iter_videos(_directorios_busqueda())
-    resumen = {"verificados": 0, "encontrados": 0, "sin_archivo": 0}
+    resumen = {"verificados": 0, "encontrados": 0, "sin_archivo": 0, "en_progreso": 0}
 
     for partido in calendario:
         if not partido.get("descargado"):
             continue
         resumen["verificados"] += 1
+        if descarga_en_progreso(partido):
+            _registrar_descarga_en_progreso(partido)
+            resumen["en_progreso"] += 1
+            continue
+
         meta = verificar_partido(partido, videos_cache, renombrar_archivos=renombrar_archivos)
         if not meta:
             _registrar_archivo_ausente(partido)
@@ -448,5 +465,9 @@ def verificar_archivos(calendario: list[dict], renombrar_archivos: bool = False)
     logger.info(
         "Verificacion local: "
         f"{resumen['encontrados']}/{resumen['verificados']} archivos encontrados"
+        + (
+            f", {resumen['en_progreso']} descargas en progreso omitidas"
+            if resumen["en_progreso"] else ""
+        )
     )
     return resumen
