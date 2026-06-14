@@ -7,6 +7,7 @@ import time
 import logging
 import os
 import platform
+import re
 import config
 from pathlib import Path
 
@@ -616,6 +617,74 @@ def normalizar_video_principal_torrent(
         "metodo_renombrado": "qbittorrent_flatten",
     })
     return info
+
+
+def _orden_video_relativo(ruta_relativa: str) -> tuple[int, str]:
+    """Ordena partes tipo Part1/Part2 antes de concatenar o procesar."""
+    nombre = Path(ruta_relativa).stem.lower()
+    match = re.search(r"(?:part|pt|cd|disc)\s*0*(\d+)", nombre)
+    if match:
+        return int(match.group(1)), nombre
+    return 0, nombre
+
+
+def rutas_videos_torrent(torrent_hash: str, carpeta_destino: str | None = None) -> list[str]:
+    """
+    Devuelve rutas absolutas existentes de los videos de un torrent.
+
+    Sirve para torrents que traen el partido dividido en Part1/Part2. No modifica
+    qBittorrent: solo resuelve las rutas actuales para que el postproceso pueda
+    decidir si concatena o convierte.
+    """
+    if not torrent_hash:
+        return []
+
+    cliente = obtener_cliente(abrir_si_no_corre=False)
+    if not cliente:
+        return []
+
+    try:
+        torrents = listar_torrents(
+            incluir_todos=getattr(config, "QBIT_BUSCAR_TODAS_LAS_DESCARGAS", True),
+            iniciar_si_no_corre=False,
+        )
+        torrent = next((t for t in torrents if t.get("hash") == torrent_hash), None)
+        if not torrent:
+            torrent = {"hash": torrent_hash}
+        if carpeta_destino:
+            torrent = {**torrent, "ruta": carpeta_destino}
+
+        archivos = cliente.torrents_files(torrent_hash=torrent_hash)
+    except Exception as e:
+        logger.debug(f"No se pudieron resolver videos del torrent {torrent_hash}: {e}")
+        return []
+
+    videos = [
+        archivo for archivo in archivos
+        if _extension_video(_torrent_attr(archivo, "name", ""))
+    ]
+    videos.sort(key=lambda archivo: _orden_video_relativo(_torrent_attr(archivo, "name", "")))
+
+    rutas = []
+    vistos = set()
+    for archivo in videos:
+        ruta_relativa = _torrent_attr(archivo, "name", "")
+        if not ruta_relativa:
+            continue
+        for candidato in _candidatos_archivo_torrent(torrent, ruta_relativa):
+            try:
+                path = candidato.expanduser().resolve()
+            except OSError:
+                continue
+            if not path.exists() or not path.is_file():
+                continue
+            key = str(path)
+            if key not in vistos:
+                rutas.append(key)
+                vistos.add(key)
+            break
+
+    return rutas
 
 
 def limpiar_auxiliares_torrent(
