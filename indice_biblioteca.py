@@ -136,7 +136,7 @@ def _archivo_existe_local(partido: dict) -> str | None:
 
 
 def _archivo_portable(partido: dict) -> str | None:
-    """Devuelve la ruta que debe tener el video dentro de la biblioteca copiada."""
+    """Devuelve una ruta reproducible solo si el video existe localmente."""
     if not partido.get("descargado"):
         return None
 
@@ -144,6 +144,11 @@ def _archivo_portable(partido: dict) -> str | None:
     if local:
         return local
 
+    return None
+
+
+def _archivo_esperado(partido: dict) -> str | None:
+    """Ruta/nombre esperado para mostrar aunque el video haya sido borrado."""
     for campo in ("archivo_web_ultimo", "archivo_local_ultimo"):
         ultimo = partido.get(campo)
         if ultimo:
@@ -152,6 +157,10 @@ def _archivo_portable(partido: dict) -> str | None:
     nombre = partido.get("nombre_canonico")
     if nombre and Path(nombre).suffix:
         return os.path.join(_directorio_partido(partido), nombre)
+
+    nombre_base = partido.get("nombre_base_canonico")
+    if nombre_base:
+        return os.path.join(_directorio_partido(partido), f"{nombre_base}.mp4")
 
     return None
 
@@ -162,8 +171,12 @@ def _estado_tarjeta(partido: dict) -> tuple[str, str, str]:
         if partido.get("estado_final"):
             return "disponible", "Disponible", "Listo para reproducir"
         return "mejorable", "Disponible", "Listo para reproducir"
+    if partido.get("archivo_local_estado") == "descarga_en_progreso":
+        return "pendiente", "Descargando", "Descarga en progreso"
     if partido.get("descargado"):
-        return "eliminado", "Video eliminado", "Fue descargado, pero no hay una ruta guardada"
+        if partido.get("marcador_borrado_existe"):
+            return "eliminado", "Borrado", "Video no encontrado en esta biblioteca"
+        return "eliminado", "Video no encontrado", "Fue registrado, pero el archivo no esta localmente"
     return "pendiente", "Aun no disponible", "Todavia no se descargo"
 
 
@@ -196,6 +209,8 @@ def _texto_busqueda(partido: dict, archivo: str | None) -> str:
         etiqueta_idioma(partido.get("idioma")),
         partido.get("nombre_canonico", ""),
         Path(partido.get("archivo_web", "")).name if partido.get("archivo_web") else "",
+        Path(partido.get("marcador_borrado", "")).name if partido.get("marcador_borrado") else "",
+        Path(_archivo_esperado(partido) or "").name,
         partido.get("archivo", ""),
         Path(archivo).name if archivo else "",
     ]
@@ -261,11 +276,25 @@ def _render_card(partido: dict) -> str:
             f"<a class=\"play-button\" href=\"{_href(archivo)}\">Abrir video</a>"
             f"<p class=\"file-name\">{html.escape(Path(archivo).name)}</p>"
         )
-    elif partido.get("descargado"):
-        ultimo = partido.get("archivo_local_ultimo") or canonico
+    elif partido.get("archivo_local_estado") == "descarga_en_progreso":
+        esperado = _archivo_esperado(partido) or canonico
+        progreso = partido.get("descarga_progreso")
+        detalle = f" {progreso}%" if progreso is not None else ""
         accion = (
-            "<div class=\"empty-action deleted\">Video eliminado o movido</div>"
-            f"<p class=\"file-name\">Ultimo visto: {html.escape(Path(str(ultimo)).name)}</p>"
+            f"<div class=\"empty-action\">Descargando{html.escape(detalle)}</div>"
+            f"<p class=\"file-name\">Esperado: {html.escape(Path(str(esperado)).name)}</p>"
+        )
+    elif partido.get("descargado"):
+        esperado = _archivo_esperado(partido) or canonico
+        marcador = partido.get("marcador_borrado")
+        detalle_marcador = (
+            f"<p class=\"file-name\">Marcador: {html.escape(Path(str(marcador)).name)}</p>"
+            if marcador else ""
+        )
+        accion = (
+            "<div class=\"empty-action deleted\">Video no encontrado</div>"
+            f"<p class=\"file-name\">Esperado: {html.escape(Path(str(esperado)).name)}</p>"
+            f"{detalle_marcador}"
         )
     else:
         accion = "<div class=\"empty-action\">Aun no disponible</div>"
@@ -696,6 +725,8 @@ def generar_indice(calendario: list[dict]) -> None:
 
     html_path = Path(config.ARCHIVO_INDICE_HTML)
     playlist_path = Path(config.ARCHIVO_PLAYLIST_M3U)
+    css_path = Path(config.DIRECTORIO_BASE) / "assets" / "css" / "biblioteca.css"
+    js_path = Path(config.DIRECTORIO_BASE) / "assets" / "js" / "biblioteca.js"
 
     partidos = sorted(calendario, key=_grupo_orden)
     disponibles = [p for p in partidos if _archivo_portable(p)]
@@ -721,7 +752,7 @@ def generar_indice(calendario: list[dict]) -> None:
         "<meta charset=\"utf-8\">",
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
         "<title>Mundial 2026 - Biblioteca</title>",
-        f"<style>{_css()}</style>",
+        "<link rel=\"stylesheet\" href=\"assets/css/biblioteca.css\">",
         "</head>",
         "<body>",
         "<header>",
@@ -755,12 +786,16 @@ def generar_indice(calendario: list[dict]) -> None:
         calendario_html,
         "</section>",
         "</main>",
-        f"<script>{_js()}</script>",
+        "<script src=\"assets/js/biblioteca.js\"></script>",
         "</body>",
         "</html>",
     ]
 
     try:
+        css_path.parent.mkdir(parents=True, exist_ok=True)
+        js_path.parent.mkdir(parents=True, exist_ok=True)
+        css_path.write_text(_css(), encoding="utf-8")
+        js_path.write_text(_js(), encoding="utf-8")
         html_path.write_text("\n".join(partes), encoding="utf-8")
         playlist_path.write_text("\n".join(playlist) + "\n", encoding="utf-8")
     except OSError as e:
