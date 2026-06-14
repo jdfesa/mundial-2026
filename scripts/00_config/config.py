@@ -72,6 +72,11 @@ QBIT_LIMPIAR_AUXILIARES = (
 )
 QBIT_EXTENSIONES_AUXILIARES = {".nfo", ".txt", ".url"}
 
+# ─── Red / Timeouts ─────────────────────────────────────────────────────────
+HTTP_TIMEOUT_CONNECT_SEGUNDOS = float(os.getenv("HTTP_TIMEOUT_CONNECT_SEGUNDOS", "10"))
+HTTP_TIMEOUT_READ_SEGUNDOS = float(os.getenv("HTTP_TIMEOUT_READ_SEGUNDOS", "30"))
+SCRAPER_TIMEOUT_SEGUNDOS = int(os.getenv("SCRAPER_TIMEOUT_SEGUNDOS", "45"))
+
 # ─── Tiempos ─────────────────────────────────────────────────────────────────
 # Horas de espera después de que EMPIEZA el partido antes de buscar
 HORAS_ESPERA_POST_PARTIDO = 3

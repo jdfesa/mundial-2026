@@ -35,6 +35,17 @@ HEADERS = {
                   "Chrome/120.0.0.0 Safari/537.36"
 }
 
+
+def _http_timeout() -> tuple[float, float]:
+    return (
+        float(getattr(config, "HTTP_TIMEOUT_CONNECT_SEGUNDOS", 10)),
+        float(getattr(config, "HTTP_TIMEOUT_READ_SEGUNDOS", 30)),
+    )
+
+
+def _http_get(url: str):
+    return requests.get(url, headers=HEADERS, timeout=_http_timeout())
+
 TRACKERS = [
     "udp://tracker.opentrackr.org:1337/announce",
     "udp://open.stealth.si:80/announce",
@@ -141,7 +152,7 @@ def buscar_piratebay(equipo1: str, equipo2: str) -> list[dict]:
                 url = f"{mirror}/q.php?q={quote_plus(query)}&cat=200"
                 logger.debug(f"[TPB] Buscando: {url}")
 
-                resp = requests.get(url, headers=HEADERS, timeout=15)
+                resp = _http_get(url)
                 if resp.status_code != 200:
                     continue
 
@@ -195,7 +206,7 @@ def buscar_torrentgalaxy(equipo1: str, equipo2: str) -> list[dict]:
                 url = f"{mirror}/torrents.php?search={quote_plus(query)}&cat=41&sort=seeders&order=desc"
                 logger.debug(f"[TGx] Buscando: {url}")
 
-                resp = requests.get(url, headers=HEADERS, timeout=15)
+                resp = _http_get(url)
                 if resp.status_code != 200:
                     continue
 
@@ -259,7 +270,7 @@ def buscar_limetorrents(equipo1: str, equipo2: str) -> list[dict]:
                 url = f"{mirror}/search/all/{quote_plus(search_term)}/seeds/1/"
                 logger.debug(f"[Lime] Buscando: {url}")
 
-                resp = requests.get(url, headers=HEADERS, timeout=15)
+                resp = _http_get(url)
                 if resp.status_code != 200:
                     continue
 
@@ -300,7 +311,7 @@ def buscar_limetorrents(equipo1: str, equipo2: str) -> list[dict]:
 
                     try:
                         detail_url = href if href.startswith("http") else f"{mirror}{href}"
-                        resp_detail = requests.get(detail_url, headers=HEADERS, timeout=10)
+                        resp_detail = _http_get(detail_url)
                         soup_detail = BeautifulSoup(resp_detail.text, "html.parser")
                         magnet_link = soup_detail.select_one('a[href^="magnet:"]')
                         if not magnet_link:
@@ -342,7 +353,7 @@ def buscar_btdig(equipo1: str, equipo2: str) -> list[dict]:
             url = f"{base_url}/search?q={quote_plus(query)}&order=0"
             logger.debug(f"[BTDIG] Buscando: {url}")
 
-            resp = requests.get(url, headers=HEADERS, timeout=15)
+            resp = _http_get(url)
             if resp.status_code != 200:
                 continue
 

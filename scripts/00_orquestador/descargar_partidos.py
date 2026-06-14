@@ -14,6 +14,7 @@ Uso:
 import json
 import os
 import re
+import signal
 import sys
 import time
 import logging
@@ -801,10 +802,20 @@ def ejecutar_watch(
     intervalo_minutos = max(1, intervalo_minutos)
 
     lock = None
+    senales_previas = {}
     inicio = time.monotonic()
     vuelta = 1
     try:
         lock = _crear_lock_watch(max_minutos)
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            senales_previas[sig] = signal.getsignal(sig)
+
+            def _handler(signum, _frame, sig_name=sig.name):
+                logger.info(f"Watch interrumpido por {sig_name}; liberando lock")
+                raise KeyboardInterrupt
+
+            signal.signal(sig, _handler)
+
         logger.info(
             "Modo watch activo: "
             f"max={max_minutos} min, intervalo={intervalo_minutos} min, lock={lock}"
@@ -847,6 +858,8 @@ def ejecutar_watch(
             time.sleep(espera * 60)
             vuelta += 1
     finally:
+        for sig, handler in senales_previas.items():
+            signal.signal(sig, handler)
         _liberar_lock_watch(lock)
 
 

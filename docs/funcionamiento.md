@@ -3,6 +3,69 @@
 Este documento concentra las reglas operativas del descargador: cuando busca, como decide
 que descargar, como maneja idioma, historial, verificacion local y postproceso.
 
+## Diagrama De Flujo
+
+```mermaid
+flowchart TD
+    A["./run.sh"] --> B["descargar_partidos.py main()"]
+    B --> W{"--watch?"}
+    W -->|si| W1["loop con lockfile"]
+    W1 --> P["ejecutar_pasada_operativa()"]
+    W -->|no| P
+
+    P --> C["cargar_calendario()"]
+    P --> D["cargar_estado() + aplicar_estado()"]
+    P --> E["normalizar_calendario()"]
+    P --> F["aplicar_marcadores_borrado()"]
+
+    P --> G["sincronizar_descargas_completadas()"]
+    G --> G1["listar_torrents() via qBittorrent API"]
+    G1 --> G2["score partido-torrent"]
+    G2 --> G3["mover_torrent() si esta fuera de destino"]
+    G3 --> G4["normalizar_video_principal_torrent()"]
+    G4 --> G5["limpiar_auxiliares_torrent()"]
+
+    P --> H["verificar_archivos()"]
+    H --> H0{"descarga_en_progreso?"}
+    H0 -->|si| H1["_confirmar_descarga_por_filesystem()"]
+    H1 --> H2{"set local estable?"}
+    H2 -->|no| H3["mantener descarga_en_progreso"]
+    H2 -->|si| H4["_iter_videos() + _score_candidato()"]
+    H0 -->|no| H4
+    H4 --> H5["_ffprobe() metadata"]
+    H5 --> H6["detectar_idioma() del audio"]
+    H6 --> H7["_renombrar_si_corresponde()"]
+
+    P --> I["buscar partidos pendientes o mejorables"]
+    I --> I1["partido_listo_para_buscar()"]
+    I1 --> I2["procesar_partido()"]
+    I2 --> I3["fuentes_manuales"]
+    I2 --> I4["buscador_torrents: 1337x, TPB, TGx, Lime, BTDIG"]
+    I2 --> I5["fallback yt-dlp validado"]
+    I4 --> I6["Groq opcional: clasificar resultados"]
+    I4 --> I7["enviar_magnet() a qBittorrent"]
+
+    P --> J["preparar_compatibilidad_web()"]
+    J --> J1["postprocesar_partido_web()"]
+    J1 --> J2["_origenes_postproceso() Part1/Part2"]
+    J2 --> J3["_convertir() ffmpeg remux/transcode"]
+    J3 --> J4["ffprobe valida MP4 final"]
+    J4 --> J5["_retirar_torrent_original()"]
+    J5 --> J6["_eliminar_origenes() si config permite"]
+    J --> J7["purgar variantes no finales si existe _es"]
+
+    P --> K["sincronizar_marcadores_borrado()"]
+    P --> L["guardar_estado() atomico"]
+    P --> M["generar_reporte_diario()"]
+    P --> N["generar_indice() HTML + assets + M3U"]
+
+    W1 --> O{"estable?"}
+    O -->|no| O1["sleep WATCH_INTERVALO_MINUTOS"]
+    O1 --> P
+    O -->|si| Z["fin"]
+    N --> Z
+```
+
 ## Logica De Busqueda
 
 El script revisa el calendario y solo procesa partidos que:
@@ -199,6 +262,15 @@ DESCARGA_ESTIMACION_UMBRAL_GRANDE_GB=5.0
 La estimacion se guarda cuando se encola una descarga: hasta 5 GB se toma como ventana de
 aprox. 1 hora; por encima de 5 GB, como aprox. 3 horas. El watch igual revisa con el intervalo
 configurado para no quedar ciego si qBittorrent termina antes.
+
+Protecciones del modo desatendido:
+
+- cada fuente torrent tiene un timeout global para que un scraper colgado no bloquee la
+  pasada completa;
+- las llamadas HTTP usan timeout de conexion y lectura configurables;
+- el watch libera su lock ante `SIGTERM`, `SIGINT` o interrupcion de teclado;
+- `estado_descargas.json` se escribe primero a un temporal y luego se reemplaza de forma
+  atomica.
 
 Para auditar o sanear inconsistencias locales de carpetas/IDs:
 

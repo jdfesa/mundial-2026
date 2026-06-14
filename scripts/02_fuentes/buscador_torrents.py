@@ -6,6 +6,8 @@ fuentes_torrent.py y el fallback con yt-dlp en fallback_ytdlp.py.
 """
 import logging
 import re
+import signal
+from contextlib import contextmanager
 
 import config
 from busqueda_reglas import (
@@ -37,6 +39,30 @@ FUENTES_TORRENT = (
     ("Lime", buscar_limetorrents),
     ("BTDIG", buscar_btdig),
 )
+
+
+class TimeoutFuenteTorrent(TimeoutError):
+    pass
+
+
+@contextmanager
+def _timeout_fuente(segundos: int):
+    """Limita una fuente completa en Unix/macOS; en otros sistemas no hace nada."""
+    if segundos <= 0 or not hasattr(signal, "SIGALRM"):
+        yield
+        return
+
+    def _handler(_signum, _frame):
+        raise TimeoutFuenteTorrent(f"timeout global de fuente tras {segundos}s")
+
+    anterior = signal.getsignal(signal.SIGALRM)
+    signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, segundos)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, anterior)
 
 
 def _deduplicar_y_filtrar(resultados: list[dict], equipo1: str, equipo2: str) -> list[dict]:
@@ -87,9 +113,12 @@ def buscar_partido(equipo1: str, equipo2: str) -> list[dict]:
 
     for etiqueta, buscador in FUENTES_TORRENT:
         try:
-            resultados = buscador(equipo1, equipo2)
+            with _timeout_fuente(int(getattr(config, "SCRAPER_TIMEOUT_SEGUNDOS", 45))):
+                resultados = buscador(equipo1, equipo2)
             todos_resultados.extend(resultados)
             logger.info(f"  [{etiqueta}] {len(resultados)} resultados")
+        except TimeoutFuenteTorrent as e:
+            logger.warning(f"  [{etiqueta}] Timeout: {e}")
         except Exception as e:
             logger.error(f"  [{etiqueta}] Error: {e}")
 

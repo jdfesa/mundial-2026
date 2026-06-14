@@ -223,8 +223,13 @@ def guardar_estado(calendario: list[dict], estado: dict | None = None) -> None:
 
     estado = actualizar_estado_desde_calendario(calendario, estado)
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
-    with open(ruta, "w", encoding="utf-8") as f:
+    ruta_tmp = f"{ruta}.tmp.{os.getpid()}"
+    with open(ruta_tmp, "w", encoding="utf-8") as f:
         json.dump(estado, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(ruta_tmp, ruta)
     logger.debug(f"Estado separado guardado en {ruta}")
     guardar_estado_txt(calendario)
 
@@ -311,6 +316,10 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
             f"{fecha} | {grupo} | {equipo1} vs {equipo2} | {archivo}{extra}"
         )
 
-    with open(ruta, "w", encoding="utf-8") as f:
+    ruta_tmp = f"{ruta}.tmp.{os.getpid()}"
+    with open(ruta_tmp, "w", encoding="utf-8") as f:
         f.write("\n".join(lineas) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(ruta_tmp, ruta)
     logger.debug(f"Estado TXT guardado en {ruta}")
