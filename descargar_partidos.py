@@ -19,6 +19,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import config
+from auditor_biblioteca import auditar_biblioteca, imprimir_auditoria, sanear_biblioteca
+from estado_partido import descarga_en_progreso
 from estado_descargas import (
     aplicar_estado,
     cargar_estado,
@@ -29,6 +31,11 @@ from estado_descargas import (
 from idioma_utils import detectar_idioma, etiqueta_idioma, idioma_es_final
 from nombres_archivos import nombre_base_canonico_partido
 from indice_biblioteca import generar_indice
+from marcadores_borrado import (
+    aplicar_marcadores_borrado,
+    partido_tiene_marcador_borrado,
+    sincronizar_marcadores_borrado,
+)
 from notificador import (
     notificar_descarga_iniciada,
     notificar_no_encontrado,
@@ -131,6 +138,11 @@ def partido_listo_para_buscar(partido: dict) -> bool:
     """
     Verifica si un partido está listo para buscar (ya terminó + tiempo de espera).
     """
+    if partido_tiene_marcador_borrado(partido):
+        return False
+    if descarga_en_progreso(partido):
+        return False
+
     es_mejorable = False
     if partido.get("descargado"):
         idioma_actual = partido.get("idioma") or detectar_idioma(partido.get("archivo"))
@@ -435,8 +447,10 @@ def mostrar_estado():
     estado = cargar_estado()
     aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
+    aplicar_marcadores_borrado(calendario)
     sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=False)
     verificar_archivos(calendario, renombrar_archivos=False)
+    sincronizar_marcadores_borrado(calendario)
     guardar_estado(calendario, estado)
     generar_reporte_diario(calendario)
     generar_indice(calendario)
@@ -462,7 +476,10 @@ def mostrar_estado():
     if descargados:
         print(f"\n✅ DESCARGADOS ({len(descargados)}):")
         for p in descargados:
-            estado = "FINAL" if p.get("estado_final") else "MEJORABLE"
+            if p.get("marcador_borrado_existe"):
+                estado = "BORRADO"
+            else:
+                estado = "FINAL" if p.get("estado_final") else "MEJORABLE"
             local = "local" if p.get("archivo_existe") else "historial"
             nombre_archivo = p.get("nombre_canonico") or p.get("nombre_base_canonico") or p.get("archivo")
             print(
@@ -527,6 +544,8 @@ def main():
     mostrar = "--status" in sys.argv
     solo_manuales = "--solo-manuales" in sys.argv
     solo_postprocesar_web = "--postprocesar-web" in sys.argv
+    solo_auditar_biblioteca = "--auditar-biblioteca" in sys.argv
+    solo_sanear_biblioteca = "--sanear-biblioteca" in sys.argv
     forzar_id = None
     marcar_id = None
     marcar_idioma = "en"
@@ -561,11 +580,33 @@ def main():
         marcar_archivo = valor_arg("--archivo")
         marcar_ruta = valor_arg("--ruta")
 
+    if solo_auditar_biblioteca or solo_sanear_biblioteca:
+        calendario = cargar_calendario()
+        estado = cargar_estado()
+        aplicar_estado(calendario, estado)
+        normalizar_calendario(calendario)
+        aplicar_marcadores_borrado(calendario)
+
+        if solo_sanear_biblioteca:
+            resumen = sanear_biblioteca(calendario, dry_run=dry_run)
+            for accion in resumen.get("acciones", []):
+                prefijo = "[DRY RUN] " if dry_run else ""
+                print(f"{prefijo}{accion}")
+            if not dry_run:
+                verificar_archivos(calendario, renombrar_archivos=False)
+                sincronizar_marcadores_borrado(calendario)
+                guardar_estado(calendario, estado)
+                generar_indice(calendario)
+
+        imprimir_auditoria(auditar_biblioteca(calendario))
+        return
+
     if marcar_id:
         calendario = cargar_calendario()
         estado = cargar_estado()
         aplicar_estado(calendario, estado)
         normalizar_calendario(calendario)
+        aplicar_marcadores_borrado(calendario)
 
         partido = next((p for p in calendario if p.get("id") == marcar_id), None)
         if not partido:
@@ -583,6 +624,7 @@ def main():
         verificar_archivos(calendario, renombrar_archivos=False)
         if not dry_run:
             preparar_compatibilidad_web(calendario)
+            sincronizar_marcadores_borrado(calendario)
         guardar_estado(calendario, estado)
         generar_reporte_diario(calendario)
         generar_indice(calendario)
@@ -597,9 +639,11 @@ def main():
         estado = cargar_estado()
         aplicar_estado(calendario, estado)
         normalizar_calendario(calendario)
+        aplicar_marcadores_borrado(calendario)
         if not dry_run:
             sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
             verificar_archivos(calendario, renombrar_archivos=True)
+            sincronizar_marcadores_borrado(calendario)
         else:
             verificar_archivos(calendario, renombrar_archivos=False)
         preparar_compatibilidad_web(calendario, dry_run=dry_run)
@@ -627,9 +671,11 @@ def main():
     estado = cargar_estado()
     aplicar_estado(calendario, estado)
     normalizar_calendario(calendario)
+    aplicar_marcadores_borrado(calendario)
     if not dry_run:
         sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
         verificar_archivos(calendario, renombrar_archivos=True)
+        sincronizar_marcadores_borrado(calendario)
     logger.info(f"Calendario cargado: {len(calendario)} partidos")
 
     # Crear directorio base
@@ -722,6 +768,7 @@ def main():
         sincronizar_descargas_completadas(calendario, iniciar_qbit_si_no_corre=True)
         verificar_archivos(calendario, renombrar_archivos=True)
         preparar_compatibilidad_web(calendario)
+        sincronizar_marcadores_borrado(calendario)
         guardar_estado(calendario, estado)
         generar_reporte_diario(calendario)
         generar_indice(calendario)

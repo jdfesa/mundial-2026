@@ -64,6 +64,9 @@ STATE_FIELDS = (
     "archivo_web",
     "archivo_web_ultimo",
     "archivo_web_existe",
+    "marcador_borrado",
+    "marcador_borrado_existe",
+    "marcador_borrado_en",
     "postprocesado_web_en",
     "archivo_origen_postproceso",
     "archivos_origen_postproceso",
@@ -183,6 +186,8 @@ def actualizar_estado_desde_calendario(calendario: list[dict], estado: dict | No
         for campo in STATE_FIELDS:
             if campo in partido:
                 item[campo] = partido.get(campo)
+            else:
+                item.pop(campo, None)
         item["equipo1"] = partido.get("equipo1")
         item["equipo2"] = partido.get("equipo2")
         item["fecha_hora_utc"] = partido.get("fecha_hora_utc")
@@ -232,6 +237,7 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
         "Estados:",
         "  FINAL       = ya hay version en idioma preferido",
         "  MEJORABLE   = hay descarga, pero falta idioma preferido",
+        "  BORRADO     = ya fue descargado/transferido, pero no esta localmente",
         "  PENDIENTE   = todavia no hay descarga",
         "",
     ]
@@ -240,7 +246,9 @@ def guardar_estado_txt(calendario: list[dict]) -> None:
         _normalizar_estado_partido(partido)
         descargado = bool(partido.get("descargado"))
         estado = "PENDIENTE"
-        if descargado and partido.get("estado_final"):
+        if descargado and partido.get("marcador_borrado_existe"):
+            estado = "BORRADO"
+        elif descargado and partido.get("estado_final"):
             estado = "FINAL"
         elif descargado:
             estado = "MEJORABLE"
