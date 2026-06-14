@@ -7,7 +7,7 @@ construye una forma estable, legible y ordenable para el archivo final.
 import re
 import unicodedata
 
-from idioma_utils import IDIOMA_EN, detectar_idioma, idioma_es_final
+from idioma_utils import IDIOMA_EN, detectar_idioma, idioma_es_final, normalizar_codigo_idioma
 
 
 def slug_archivo(texto: str | None) -> str:
@@ -25,7 +25,7 @@ def sufijo_idioma_archivo(idioma: str | None) -> str:
     """Devuelve el sufijo corto usado en el nombre canonico."""
     if idioma_es_final(idioma):
         return "es"
-    return IDIOMA_EN
+    return normalizar_codigo_idioma(idioma) or IDIOMA_EN
 
 
 def idioma_nombre_partido(partido: dict, idioma: str | None = None) -> str:

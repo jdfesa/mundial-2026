@@ -2,8 +2,8 @@
 Limpieza de variantes de idioma una vez que existe la version final.
 
 El ID identifica al partido y el sufijo identifica la variante. Si aparece
-`005_..._es.mp4`, cualquier `005_..._en.*` canonico deja de aportar valor y se
-puede purgar para recuperar espacio.
+`005_..._es.mp4`, cualquier variante canonica no final (`_en`, `_bg`, `_ru`,
+etc.) deja de aportar valor y se puede purgar para recuperar espacio.
 """
 import logging
 import re
@@ -51,18 +51,18 @@ def _directorios_busqueda(partido: dict) -> list[Path]:
     return unicos
 
 
-def _patron_ingles(partido: dict) -> re.Pattern | None:
+def _patron_no_final(partido: dict) -> re.Pattern | None:
     partido_id = partido.get("id")
     try:
         prefijo = f"{int(partido_id):03d}_"
     except (TypeError, ValueError):
         return None
     extensiones = [re.escape(ext.lstrip(".").lower()) for ext in getattr(config, "EXTENSIONES_VIDEO", [])]
-    return re.compile(rf"^{re.escape(prefijo)}.+_en\.({'|'.join(extensiones)})$")
+    return re.compile(rf"^{re.escape(prefijo)}.+_(?!es\.)[a-z]{{2}}\.({'|'.join(extensiones)})$")
 
 
 def purgar_ingles_si_es_final(partido: dict, dry_run: bool = False) -> dict:
-    """Elimina archivos canonicos `_en` cuando ya existe una version `_es` final."""
+    """Elimina variantes canonicas no finales cuando ya existe `_es` final."""
     resumen = {"purgados": 0, "omitidos": 0, "candidatos": []}
     if not getattr(config, "PURGAR_INGLES_AL_FINAL_ES", True):
         return resumen
@@ -71,7 +71,7 @@ def purgar_ingles_si_es_final(partido: dict, dry_run: bool = False) -> dict:
     if not (partido.get("archivo_web_existe") or partido.get("archivo_existe")):
         return resumen
 
-    patron = _patron_ingles(partido)
+    patron = _patron_no_final(partido)
     if not patron:
         return resumen
 
@@ -129,7 +129,7 @@ def purgar_ingles_si_es_final(partido: dict, dry_run: bool = False) -> dict:
         partido["idioma_anterior_purgado_en"] = datetime.now(timezone.utc).isoformat()
         resumen["purgados"] = len(purgados)
         logger.info(
-            "Version en ingles purgada tras version final en espanol: "
+            "Version no final purgada tras version final en espanol: "
             f"{partido.get('id')} ({len(purgados)} archivo/s)"
         )
     if errores:
