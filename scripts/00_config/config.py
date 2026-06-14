@@ -83,6 +83,15 @@ MINUTOS_ENTRE_REINTENTOS = 30
 MINUTOS_ENTRE_REINTENTOS_MEJORA = 180
 # Minutos desde que se encola una descarga hasta la primera revision esperada.
 DESCARGA_REVISAR_DESPUES_MINUTOS = int(os.getenv("DESCARGA_REVISAR_DESPUES_MINUTOS", "60"))
+# Si qBittorrent no responde pero los videos locales estan presentes, con
+# metadata legible y sin cambios recientes, el verificador puede desbloquear el
+# postproceso. Esto cubre casos donde la API quedo atrasada pero el torrent ya
+# termino fisicamente.
+DESCARGA_CONFIRMAR_COMPLETA_POR_FILESYSTEM = (
+    os.getenv("DESCARGA_CONFIRMAR_COMPLETA_POR_FILESYSTEM", "1") not in {"0", "false", "False"}
+)
+DESCARGA_FILESYSTEM_MINUTOS_ESTABLE = int(os.getenv("DESCARGA_FILESYSTEM_MINUTOS_ESTABLE", "10"))
+EXTENSIONES_DESCARGA_INCOMPLETA = {".!qb", ".part", ".crdownload", ".tmp"}
 # El fallback de yt-dlp es propenso a traer comentarios/reacciones. Se espera
 # mucho mas que los torrents antes de permitirlo.
 YTDLP_HORAS_ESPERA_POST_PARTIDO = int(os.getenv("YTDLP_HORAS_ESPERA_POST_PARTIDO", "24"))
@@ -142,6 +151,9 @@ WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO = (
 )
 WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL = (
     os.getenv("WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL", "1") not in {"0", "false", "False"}
+)
+WEB_COMPAT_ELIMINAR_ORIGINAL_SIN_QBIT = (
+    os.getenv("WEB_COMPAT_ELIMINAR_ORIGINAL_SIN_QBIT", "1") not in {"0", "false", "False"}
 )
 
 # Palabras clave para buscar partidos completos (no resúmenes)

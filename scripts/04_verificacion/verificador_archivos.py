@@ -16,7 +16,7 @@ from pathlib import Path
 
 import config
 from estado_partido import descarga_en_progreso
-from idioma_utils import detectar_idioma, idioma_es_final, normalizar_texto
+from idioma_utils import IDIOMA_DESCONOCIDO, detectar_idioma, idioma_es_final, normalizar_texto
 from nombres_archivos import nombre_canonico_partido
 
 logger = logging.getLogger("mundial")
@@ -182,6 +182,8 @@ def _extraer_metadata_ffprobe(datos: dict) -> dict:
                 meta.setdefault("pistas_audio", []).append(texto)
             if idioma_es_final(detectado):
                 meta["idioma_audio"] = detectado
+            elif detectado != IDIOMA_DESCONOCIDO and "idioma_audio" not in meta:
+                meta["idioma_audio"] = detectado
 
     return meta
 
@@ -266,6 +268,22 @@ def _proveedor_filesystem(partido: dict) -> bool:
     return partido.get("proveedor") in proveedores
 
 
+def _salida_postprocesada_web(partido: dict, path: Path) -> bool:
+    if path.suffix.lower() != ".mp4" or not partido.get("postprocesado_web_en"):
+        return False
+    nombres = {
+        Path(str(valor)).name
+        for valor in (
+            partido.get("archivo_local"),
+            partido.get("archivo_local_ultimo"),
+            partido.get("archivo_web"),
+            partido.get("archivo_web_ultimo"),
+        )
+        if valor
+    }
+    return path.name in nombres
+
+
 def _renombrar_si_corresponde(partido: dict, path: Path, idioma: str | None) -> tuple[Path, dict]:
     info = {
         "nombre_canonico": nombre_canonico_partido(partido, path.suffix, idioma),
@@ -296,7 +314,7 @@ def _renombrar_si_corresponde(partido: dict, path: Path, idioma: str | None) -> 
         })
         return nuevo_path, info
 
-    if not _proveedor_filesystem(partido):
+    if not (_proveedor_filesystem(partido) or _salida_postprocesada_web(partido, path)):
         info["renombrado_pendiente"] = True
         info["metodo_renombrado"] = "pendiente_qbittorrent"
         return path, info
@@ -398,6 +416,123 @@ def verificar_partido(
     return meta
 
 
+def _path_en_directorios(path: Path, directorios: list[Path]) -> bool:
+    try:
+        return any(path.is_relative_to(d) for d in directorios)
+    except AttributeError:
+        return any(str(path).startswith(str(d)) for d in directorios)
+
+
+def _orden_parte(path: Path) -> tuple[int, str]:
+    match = re.search(r"(?:part|pt|cd|disc)\s*0*(\d+)", path.stem.lower())
+    if match:
+        return int(match.group(1)), path.name.lower()
+    return 0, path.name.lower()
+
+
+def _videos_relacionados(partido: dict, origen: Path, videos_cache: list[Path]) -> list[Path]:
+    directorios = _directorios_busqueda(partido)
+    candidatos = []
+    for video in videos_cache:
+        if not _path_en_directorios(video, directorios):
+            continue
+        if video.suffix.lower() != origen.suffix.lower():
+            continue
+        try:
+            mismo = video.expanduser().resolve() == origen.expanduser().resolve()
+        except OSError:
+            mismo = False
+        if mismo or _score_candidato(partido, video) >= 30:
+            candidatos.append(video)
+
+    unicos = []
+    vistos = set()
+    for path in sorted(candidatos, key=_orden_parte):
+        try:
+            key = str(path.expanduser().resolve())
+        except OSError:
+            key = str(path)
+        if key in vistos:
+            continue
+        vistos.add(key)
+        unicos.append(path)
+    return unicos or [origen]
+
+
+def _archivo_estable(path: Path) -> bool:
+    minutos = int(getattr(config, "DESCARGA_FILESYSTEM_MINUTOS_ESTABLE", 10))
+    try:
+        stat = path.stat()
+    except OSError:
+        return False
+    if stat.st_size <= 0:
+        return False
+    if minutos <= 0:
+        return True
+    edad_segundos = datetime.now(timezone.utc).timestamp() - stat.st_mtime
+    return edad_segundos >= minutos * 60
+
+
+def _hay_incompletos_relacionados(partido: dict, origenes: list[Path]) -> bool:
+    extensiones = {ext.lower() for ext in getattr(config, "EXTENSIONES_DESCARGA_INCOMPLETA", set())}
+    if not extensiones:
+        return False
+    bases = []
+    if partido.get("ruta"):
+        bases.append(Path(partido["ruta"]))
+    bases.extend(path.parent for path in origenes)
+
+    vistos = set()
+    for base in bases:
+        try:
+            base = base.expanduser().resolve()
+        except OSError:
+            continue
+        if base in vistos or not base.exists():
+            continue
+        vistos.add(base)
+        for path in base.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in extensiones:
+                continue
+            if _score_candidato(partido, path) > 0:
+                return True
+    return False
+
+
+def _confirmar_descarga_por_filesystem(
+    partido: dict,
+    videos_cache: list[Path],
+) -> dict | None:
+    if not getattr(config, "DESCARGA_CONFIRMAR_COMPLETA_POR_FILESYSTEM", True):
+        return None
+
+    meta = verificar_partido(partido, videos_cache, renombrar_archivos=False)
+    if not meta or meta.get("ffprobe") != "ok":
+        return None
+
+    origen = Path(meta["archivo_local"])
+    origenes = _videos_relacionados(partido, origen, videos_cache)
+    if _hay_incompletos_relacionados(partido, origenes):
+        return None
+
+    for path in origenes:
+        if not _archivo_estable(path):
+            return None
+        meta_parte = _ffprobe(path)
+        if meta_parte.get("ffprobe") != "ok":
+            return None
+
+    ahora = datetime.now(timezone.utc).isoformat()
+    meta["descarga_estado"] = "completa"
+    meta["descarga_progreso"] = 100
+    meta["descarga_confirmada_por"] = "filesystem_estable"
+    meta["descarga_confirmada_en"] = ahora
+    meta["descarga_actualizada_en"] = ahora
+    meta["descarga_partes_detectadas"] = len(origenes)
+    meta["archivos_descarga_detectados"] = [str(path) for path in origenes]
+    return meta
+
+
 def _registrar_archivo_ausente(partido: dict) -> None:
     ultimo = partido.get("archivo_local") or partido.get("archivo_local_ultimo")
     if ultimo:
@@ -446,11 +581,19 @@ def verificar_archivos(calendario: list[dict], renombrar_archivos: bool = False)
             continue
         resumen["verificados"] += 1
         if descarga_en_progreso(partido):
-            _registrar_descarga_en_progreso(partido)
-            resumen["en_progreso"] += 1
-            continue
+            meta = _confirmar_descarga_por_filesystem(partido, videos_cache)
+            if not meta:
+                _registrar_descarga_en_progreso(partido)
+                resumen["en_progreso"] += 1
+                continue
+            logger.info(
+                "Descarga confirmada por filesystem: "
+                f"{partido.get('equipo1')} vs {partido.get('equipo2')} "
+                f"({meta.get('descarga_partes_detectadas', 1)} parte(s))"
+            )
+        else:
+            meta = verificar_partido(partido, videos_cache, renombrar_archivos=renombrar_archivos)
 
-        meta = verificar_partido(partido, videos_cache, renombrar_archivos=renombrar_archivos)
         if not meta:
             _registrar_archivo_ausente(partido)
             resumen["sin_archivo"] += 1
@@ -480,10 +623,11 @@ def verificar_archivos(calendario: list[dict], renombrar_archivos: bool = False)
                 continue
 
         idioma_archivo = meta.get("idioma_detectado_archivo")
-        if idioma_archivo and idioma_es_final(idioma_archivo):
-            partido["idioma"] = idioma_archivo
-            partido["estado_final"] = True
-            partido["necesita_mejora"] = False
+        if idioma_archivo and idioma_archivo != IDIOMA_DESCONOCIDO:
+            if idioma_es_final(idioma_archivo) or not idioma_es_final(partido.get("idioma")):
+                partido["idioma"] = idioma_archivo
+            partido["estado_final"] = idioma_es_final(partido.get("idioma"))
+            partido["necesita_mejora"] = not partido["estado_final"]
 
     logger.info(
         "Verificacion local: "

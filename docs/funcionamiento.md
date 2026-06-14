@@ -64,19 +64,21 @@ y el partido vuelve a pendiente.
 |------------------|--------|----------------|
 | Espanol | `FINAL` | No, ya tiene la version preferida. |
 | Ingles | `MEJORABLE` | Si, pero solo si encuentra una en espanol. |
-| Desconocido | `MEJORABLE` | Si, igual que ingles. |
+| Otro idioma conocido | `MEJORABLE` | Si, pero solo si encuentra una en espanol. |
+| Desconocido | `MEJORABLE` | Si, igual que ingles/otros idiomas. |
 
-Si un partido ya esta en ingles y una busqueda posterior encuentra otro resultado en ingles,
-no se vuelve a descargar. Si encuentra una version en espanol, se descarga y el partido pasa
-a estado final.
+Si un partido ya esta en ingles, ruso, bulgaro u otro idioma no final, y una busqueda
+posterior encuentra otro resultado no final, no se vuelve a descargar. Si encuentra una
+version en espanol, se descarga y el partido pasa a estado final.
 
 El `id` del calendario no se recalcula por posicion ni por archivos presentes. Funciona como
 identidad estable del partido: si `005` fue Qatar vs Suiza, cualquier variante de idioma usa
-ese mismo prefijo. El sufijo (`_en` o `_es`) diferencia variantes fisicas sin cambiar el ID.
+ese mismo prefijo. El sufijo (`_es`, `_en`, `_ru`, `_bg`, etc.) diferencia variantes fisicas
+sin cambiar el ID.
 
 Cuando una version en espanol queda disponible y compatible para la web, el flujo puede purgar
-archivos canonicos del mismo ID en ingles (`005_..._en.*`) para recuperar espacio. Esto se
-controla con `PURGAR_INGLES_AL_FINAL_ES`.
+archivos canonicos no finales del mismo ID (`005_..._en.*`, `005_..._bg.*`, etc.) para
+recuperar espacio. Esto se controla con `PURGAR_INGLES_AL_FINAL_ES`.
 
 Las busquedas de mejora para partidos ya descargados en ingles no consumen los intentos
 normales. Se registran aparte como `intentos_mejora` y `ultimo_intento_mejora`, y se
@@ -112,6 +114,10 @@ En cada `--status` y al final de una ejecucion real, el script revisa la bibliot
   `archivo_local_estado=movido_o_borrado`.
 - si qBittorrent informa progreso menor a 100%, no verifica ni postprocesa archivos parciales.
 - si existe o corresponde un marcador `*_BORRADO.txt`, lo respeta como historial local.
+- si qBittorrent no responde pero el video canonico y sus partes relacionadas estan en
+  disco, tienen metadata legible, no tienen extensiones incompletas y llevan varios minutos
+  sin modificarse, el verificador puede marcarlas como completas por filesystem para no
+  quedar bloqueado por un estado viejo de la API.
 
 Para leer duracion, resolucion e idioma de pistas de audio usa `ffprobe` si esta instalado.
 Si no esta, igual detecta existencia y tamano.
@@ -124,10 +130,12 @@ forma segura:
 ```text
 001_mexico_vs_sudafrica_en.mkv
 002_corea_del_sur_vs_rep_checa_es.mp4
+005_qatar_vs_suiza_bg.mp4
 ```
 
 El prefijo numerico evita colisiones, los equipos salen del calendario en espanol y el
-sufijo indica idioma/estado: `_es` es final, `_en` queda como mejorable.
+sufijo indica idioma/estado: `_es` es final; `_en`, `_bg`, `_ru` u otros quedan como
+mejorables con el mismo peso.
 
 Si qBittorrent esta administrando el archivo, el renombrado se intenta por la Web API de
 qBittorrent. Cuando el torrent trae una carpeta release con spam, el video principal se
@@ -182,7 +190,10 @@ WEB_COMPAT_VIDEO_PRESET=veryfast
 WEB_COMPAT_CONSERVAR_ORIGINAL=1
 WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO=0
 WEB_COMPAT_RETIRAR_TORRENT_ORIGINAL=1
+WEB_COMPAT_ELIMINAR_ORIGINAL_SIN_QBIT=1
 PURGAR_INGLES_AL_FINAL_ES=1
+DESCARGA_CONFIRMAR_COMPLETA_POR_FILESYSTEM=1
+DESCARGA_FILESYSTEM_MINUTOS_ESTABLE=10
 ```
 
 `WEB_COMPAT_CONSERVAR_ORIGINAL=0` elimina el origen despues de generar el MP4, pero puede
@@ -192,6 +203,9 @@ qBittorrent sin pedirle que borre archivos, y luego elimina los origenes ya reem
 por el MP4 final. Para transcodes pesados, `WEB_COMPAT_CONSERVAR_ORIGINAL_PESADO=0`
 aplica esa limpieza aunque el remux normal conserve origenes. Usalo solo si ya no necesitas
 seedear ese torrent.
+Si qBittorrent no responde y `WEB_COMPAT_ELIMINAR_ORIGINAL_SIN_QBIT=1`, el sistema elimina
+igual los origenes dentro de `DIRECTORIO_BASE` despues de generar un MP4 compatible. Esto
+privilegia liberar espacio local y puede dejar el torrent roto si se vuelve a abrir luego.
 
 Ademas se conserva una evaluacion de tamano/resolucion:
 
