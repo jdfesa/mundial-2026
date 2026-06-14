@@ -2,7 +2,7 @@
 Limpieza de variantes de idioma una vez que existe la version final.
 
 El ID identifica al partido y el sufijo identifica la variante. Si aparece
-`005_..._es.mp4`, cualquier variante canonica no final (`_en`, `_bg`, `_ru`,
+`005_..._es.mp4`, cualquier variante canonica no final (`_en`, `_bul`, `_rus`,
 etc.) deja de aportar valor y se puede purgar para recuperar espacio.
 """
 import logging
@@ -58,7 +58,7 @@ def _patron_no_final(partido: dict) -> re.Pattern | None:
     except (TypeError, ValueError):
         return None
     extensiones = [re.escape(ext.lstrip(".").lower()) for ext in getattr(config, "EXTENSIONES_VIDEO", [])]
-    return re.compile(rf"^{re.escape(prefijo)}.+_(?!es\.)[a-z]{{2}}\.({'|'.join(extensiones)})$")
+    return re.compile(rf"^{re.escape(prefijo)}.+_(?!es\.)[a-z]{{2,3}}\.({'|'.join(extensiones)})$")
 
 
 def purgar_ingles_si_es_final(partido: dict, dry_run: bool = False) -> dict:
