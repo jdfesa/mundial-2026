@@ -32,6 +32,8 @@ En qBittorrent:
 5. Tocar Apply/OK y reiniciar qBittorrent si el puerto no responde.
 6. Verificar que `.env` tenga los mismos valores.
 
+![qBittorrent Web UI](../img/qbittorrent_web_ui.png)
+
 En `.env`:
 
 ```env
