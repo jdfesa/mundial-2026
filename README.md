@@ -223,3 +223,20 @@ Guía completa: [`docs/qbittorrent.md`](docs/qbittorrent.md).
 - [debatepro/world-cup-2026-calendar](https://github.com/debatepro/world-cup-2026-calendar) — JSON/CSV/ICS con `kickoff_utc`, estadio, ciudad. CC0/MIT.
 - [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) — Fixtures, equipos, grupos, resultados. CC0.
 - [mjwebmaster/world-cup-2026-schedule-data](https://github.com/mjwebmaster/world-cup-2026-schedule-data) — JSON/CSV/ICS alternativo.
+
+## TODO / Pendientes conocidos
+
+- [ ] **Limpieza post-postproceso**: cuando `run.sh` detecta que el MP4 final ya existe, debe
+  eliminar el `.mkv` de origen y cualquier dato duplicado que haya quedado del torrent.
+- [ ] **Web local agnóstica a la máquina**: la página se genera con datos de la máquina
+  descargadora (A), donde un video puede figurar como `BORRADO`. Pero en la máquina destino
+  (B, Windows 10) ese video sí existe. Opciones evaluadas:
+  - Generar un `.bat` en la máquina B que regenere el índice escaneando los MP4 locales.
+  - O simplificar: que el botón siempre apunte al `.mp4` esperado y, si no se encuentra,
+    el navegador muestre un aviso de video no encontrado en vez de marcar `BORRADO` desde
+    el HTML estático.
+- [ ] **Inconsistencia de carpetas por ID**: se detectó que
+  `003_canada_vs_bosnia_herzegovina_en.mp4` aparece en `Grupo D` y su marcador
+  `003_canada_vs_bosnia_herzegovina_en_BORRADO.txt` en `Grupo B`. Un mismo partido no debe
+  tener archivos en dos carpetas distintas. `run.sh --watch` los regeneró en el lugar
+  equivocado; hay que corregir la lógica de ubicación.
